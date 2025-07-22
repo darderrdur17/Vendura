@@ -21,6 +21,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   String _orderType = '';
   double _discountPercentage = 0.0;
   bool _isProcessing = false;
+  // Tip disabled – always zero
+  double _tip = 0.0;
+  double _cashReceived = 0.0;
+  double _change = 0.0;
+  final TextEditingController _cashController = TextEditingController();
 
   final List<Map<String, dynamic>> _paymentMethods = [
     {
@@ -55,6 +60,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadPaymentData();
     });
+  }
+
+  @override
+  void dispose() {
+    // _tipController not used
+    _cashController.dispose();
+    super.dispose();
   }
 
   void _loadPaymentData() {
@@ -177,6 +189,39 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ),
               ),
             ),
+            
+            // Tip disabled – no input
+            // Cash Input (if payment method is Cash)
+            if (_selectedPaymentMethod == 'Cash')
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Row(
+                  children: [
+                    const Text('Cash Received', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _cashController,
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          hintText: '0.00',
+                          border: OutlineInputBorder(),
+                          prefixText: '  ',
+                        ),
+                        onChanged: (v) {
+                          setState(() {
+                            _cashReceived = double.tryParse(v) ?? 0.0;
+                            final totalWithTip = _totalAmount + _tip;
+                            _change = _cashReceived > totalWithTip ? _cashReceived - totalWithTip : 0.0;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Change:  ${_change.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
             
             // Checkout Button
             Container(
@@ -314,11 +359,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     // Generate receipt using ReceiptGenerator
     if (_order != null) {
       try {
+        final amountPaid = _selectedPaymentMethod == 'Cash' ? _cashReceived : _totalAmount;
         final receiptId = await ReceiptGenerator.generateReceipt(
           order: _order!,
-          paymentMethod: _selectedPaymentMethod,
-          amountPaid: _totalAmount,
-          tip: 0.0, // You can add tip input functionality later
+          paymentMethod: _mapPaymentMethodKey(_selectedPaymentMethod),
+          amountPaid: amountPaid,
+          tip: _tip,
+          change: _change,
         );
         
         // Update receipts provider
@@ -344,7 +391,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Amount: \$${_totalAmount.toStringAsFixed(2)}'),
+              Text('Amount:  ${_totalAmount.toStringAsFixed(2)}'),
+              // Tip removed
+              if (_selectedPaymentMethod == 'Cash') Text('Cash Received:  ${_cashReceived.toStringAsFixed(2)}'),
+              if (_selectedPaymentMethod == 'Cash') Text('Change:  ${_change.toStringAsFixed(2)}'),
               Text('Method: $_selectedPaymentMethod'),
               Text('Order Type: $_orderType'),
               if (_discountPercentage > 0)
@@ -443,5 +493,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         'receiptId': receiptId,
       },
     );
+  }
+
+  String _mapPaymentMethodKey(String method) {
+    final lower = method.toLowerCase();
+    if (lower.contains('cash')) return 'cash';
+    if (lower.contains('card')) return 'card';
+    if (lower.contains('paynow') || lower.contains('paylah')) return 'mobile';
+    return 'mobile';
   }
 } 

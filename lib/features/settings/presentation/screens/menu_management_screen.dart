@@ -177,6 +177,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
         onPressed: _showAddItemDialog,
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        heroTag: 'menu_fab',
         child: const Icon(Icons.add),
       ),
     );
@@ -189,6 +190,8 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     final description = item['description'] as String?;
     final isAvailable = item['isAvailable'] as bool? ?? true;
     final imageUrl = item['imageUrl'] as String?;
+    final stockQuantity = item['stockQuantity'] ?? 0;
+    final minStockLevel = item['minStockLevel'] ?? 0;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,13 +285,13 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                               Icon(Icons.inventory, size: 14, color: Colors.grey[600]),
                               const SizedBox(width: 4),
                               Text(
-                                'Stock: ${item['stockQuantity'] ?? 0}',
+                                'Stock: $stockQuantity',
                                 style: AppTheme.bodySmall.copyWith(
                                   color: Colors.grey[600],
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              if ((item['stockQuantity'] ?? 0) <= (item['minStockLevel'] ?? 0))
+                              if (stockQuantity <= minStockLevel)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                   decoration: BoxDecoration(
@@ -441,11 +444,72 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
   }
 
   void _showAddItemDialog() {
-    // TODO: Implement add item dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Add item functionality coming soon'),
-        backgroundColor: AppTheme.infoBlue,
+    final nameCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+    final categoryCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final imageCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Item'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: priceCtrl,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Price'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: categoryCtrl,
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: imageCtrl,
+                decoration: const InputDecoration(labelText: 'Image URL'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+              final data = {
+                'name': nameCtrl.text.trim(),
+                'price': price,
+                'category': categoryCtrl.text.trim().isEmpty ? 'Uncategorized' : categoryCtrl.text.trim(),
+                'description': descCtrl.text.trim(),
+                'imageUrl': imageCtrl.text.trim(),
+                'isAvailable': true,
+              };
+              await ref.read(itemsProvider.notifier).addItem(data);
+              if (mounted) Navigator.pop(context);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item added')));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
@@ -483,11 +547,141 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
   }
 
   void _editItem(Map<String, dynamic> item) {
-    // TODO: Implement edit item
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Editing ${item['name']}'),
-        backgroundColor: AppTheme.infoBlue,
+    final nameController = TextEditingController(text: item['name']);
+    final priceController = TextEditingController(text: item['price'].toString());
+    final categoryController = TextEditingController(text: item['category']);
+    final descriptionController = TextEditingController(text: item['description'] ?? '');
+    final imageUrlController = TextEditingController(text: item['imageUrl'] ?? '');
+    bool isAvailable = item['isAvailable'] ?? true;
+    int stockQuantity = item['stockQuantity'] ?? 0;
+    int minStockLevel = item['minStockLevel'] ?? 0;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Edit Item: ${item['name']}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Price',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: categoryController,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: imageUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Image URL',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Available'),
+                    Switch(
+                      value: isAvailable,
+                      onChanged: (value) {
+                        setDialogState(() => isAvailable = value);
+                      },
+                      activeColor: AppTheme.primaryColor,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: TextEditingController(text: stockQuantity.toString()),
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Stock Quantity',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (v) => stockQuantity = int.tryParse(v) ?? 0,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: TextEditingController(text: minStockLevel.toString()),
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Min Stock',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (v) => minStockLevel = int.tryParse(v) ?? 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final updatedItem = {
+                  ...item,
+                  'name': nameController.text,
+                  'price': double.tryParse(priceController.text) ?? 0.0,
+                  'category': categoryController.text,
+                  'description': descriptionController.text,
+                  'imageUrl': imageUrlController.text,
+                  'isAvailable': isAvailable,
+                  'stockQuantity': stockQuantity,
+                  'minStockLevel': minStockLevel,
+                };
+                await ref.read(itemsProvider.notifier).updateItem(item['id'], updatedItem);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Item "${nameController.text}" updated'),
+                    backgroundColor: AppTheme.successGreen,
+                  ),
+                );
+              },
+              style: AppTheme.primaryButtonStyle,
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -515,9 +709,9 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Implement delete item
+              await ref.read(itemsProvider.notifier).deleteItem(item['id']);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('${item['name']} deleted'),
@@ -861,6 +1055,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
     final categoryController = TextEditingController();
+    final quantityController = TextEditingController(text: '1');
     String selectedCategory = 'Coffee Add-ons';
     
     final categories = [
@@ -915,6 +1110,15 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                   selectedCategory = value!;
                 },
               ),
+              const SizedBox(height: AppTheme.spacingM),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Quantity',
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ],
           ),
         ),
@@ -932,6 +1136,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                   'price': double.tryParse(priceController.text) ?? 0.0,
                   'category': selectedCategory,
                   'isAvailable': true,
+                  'quantity': int.tryParse(quantityController.text) ?? 1,
                 };
                 
                 await ref.read(itemsProvider.notifier).addAddOnToItem(item['id'], addOnData);
@@ -956,6 +1161,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
   void _editAddOn(Map<String, dynamic> item, Map<String, dynamic> addOn) {
     final nameController = TextEditingController(text: addOn['name']);
     final priceController = TextEditingController(text: addOn['price'].toString());
+    final quantityController = TextEditingController(text: addOn['quantity'].toString());
     String selectedCategory = addOn['category'] ?? 'Coffee Add-ons';
     bool isAvailable = addOn['isAvailable'] ?? true;
     
@@ -1026,6 +1232,15 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                   },
                   activeColor: AppTheme.primaryColor,
                 ),
+                const SizedBox(height: AppTheme.spacingM),
+                TextField(
+                  controller: quantityController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1042,6 +1257,7 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                     'price': double.tryParse(priceController.text) ?? 0.0,
                     'category': selectedCategory,
                     'isAvailable': isAvailable,
+                    'quantity': int.tryParse(quantityController.text) ?? 1,
                   };
                   
                   await ref.read(itemsProvider.notifier).updateAddOn(
@@ -1100,6 +1316,50 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
               foregroundColor: Colors.white,
             ),
             child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInlineEditDialog(Map<String, dynamic> item, String field, int currentValue) {
+    final controller = TextEditingController(text: currentValue.toString());
+    final label = field == 'stockQuantity' ? 'Stock Quantity' : 'Minimum Stock Level';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit $label'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newValue = int.tryParse(controller.text) ?? currentValue;
+              Navigator.pop(context);
+              final updatedItem = {
+                ...item,
+                field: newValue,
+              };
+              await ref.read(itemsProvider.notifier).updateItem(item['id'], updatedItem);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label updated for ${item['name']}'),
+                  backgroundColor: AppTheme.successGreen,
+                ),
+              );
+            },
+            style: AppTheme.primaryButtonStyle,
+            child: const Text('Save'),
           ),
         ],
       ),

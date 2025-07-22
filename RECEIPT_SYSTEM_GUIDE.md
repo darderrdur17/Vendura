@@ -16,10 +16,11 @@ Each receipt contains:
 - **Receipt ID**: Unique identifier
 - **Order ID**: Reference to original order
 - **Items**: All ordered items with quantities, prices, add-ons, and comments
-- **Payment Details**: Method, amount paid, change
+- **Payment Details**: Method, amount paid, tip, change
 - **Timestamps**: Creation date and time
 - **Order Type**: Dine-in or Takeaway
 - **Discounts**: Applied discounts and percentages
+- **Receipt Settings**: Cafe name, slogan, contact info, footer
 
 ## 🎨 Default Receipt Template
 
@@ -32,12 +33,12 @@ Each receipt contains:
 - **Contact Information**: Cafe address and contact details
 
 ### Template Sections
-1. **Header**: Logo, cafe name, address, contact info
+1. **Header**: Logo, cafe name, slogan, address, contact info
 2. **Order Info**: Receipt ID, order ID, date/time
 3. **Items List**: Detailed item breakdown with add-ons
 4. **Totals**: Subtotal, tip, total amount
-5. **Payment Info**: Method, amount paid, change
-6. **Footer**: Thank you message and receipt ID
+5. **Payment Info**: Method, amount paid, tip, change
+6. **Footer**: Custom message and receipt ID
 
 ## 📱 Receipt Access & Viewing
 
@@ -76,7 +77,7 @@ Each receipt contains:
       "name": "Espresso",
       "price": 7.00,
       "quantity": 2,
-      "addOns": [{"name": "Extra Shot", "price": 1.00}],
+      "addOns": [{"name": "Extra Shot", "price": 1.00, "quantity": 1}],
       "comment": "Extra hot please"
     }
   ],
@@ -86,7 +87,11 @@ Each receipt contains:
   "paymentMethod": "cash",
   "amountPaid": 15.00,
   "change": 2.50,
-  "createdAt": "2024-12-15T10:30:00.000Z"
+  "createdAt": "2024-12-15T10:30:00.000Z",
+  "cafeName": "Vendura Cafe",
+  "slogan": "Brewed with Passion",
+  "showContactInfo": true,
+  "footer": "Thank you for your business!"
 }
 ```
 

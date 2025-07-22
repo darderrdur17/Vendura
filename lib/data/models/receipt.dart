@@ -47,9 +47,7 @@ class Receipt {
       subtotal: (json['subtotal'] as num).toDouble(),
       tip: (json['tip'] as num).toDouble(),
       total: (json['total'] as num).toDouble(),
-      paymentMethod: PaymentMethod.values.firstWhere(
-        (e) => e.toString() == 'PaymentMethod.${json['paymentMethod']}',
-      ),
+      paymentMethod: _parsePaymentMethod(json['paymentMethod'] as String),
       amountPaid: (json['amountPaid'] as num).toDouble(),
       change: (json['change'] as num).toDouble(),
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -107,6 +105,24 @@ class Receipt {
 
   @override
   int get hashCode => id.hashCode;
+
+  // Helper to safely parse payment method
+  static PaymentMethod _parsePaymentMethod(String method) {
+    try {
+      return PaymentMethod.values.firstWhere(
+        (e) => e.name.toLowerCase() == method.toLowerCase(),
+      );
+    } catch (_) {
+      // Map common mobile payment strings
+      final normalized = method.toLowerCase();
+      if (normalized.contains('paynow') || normalized.contains('paylah')) {
+        return PaymentMethod.mobile;
+      }
+      if (normalized.contains('card')) return PaymentMethod.card;
+      if (normalized.contains('cash')) return PaymentMethod.cash;
+      return PaymentMethod.mobile;
+    }
+  }
 
   @override
   String toString() {

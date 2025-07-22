@@ -133,6 +133,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
         label: const Text('New Receipt'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
+        heroTag: 'receipts_fab',
       ),
     );
   }

@@ -9,6 +9,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    print('[SettingsScreen] build: settings = ' + settings.toString());
     
     return Scaffold(
       appBar: AppBar(
@@ -58,6 +59,7 @@ class SettingsScreen extends ConsumerWidget {
                 Switch(
                   value: settings.autoSync,
                   onChanged: (value) {
+                    print('[SettingsScreen] AutoSync toggled: ' + value.toString());
                     ref.read(settingsProvider.notifier).updateAutoSync(value);
                   },
                   activeColor: AppTheme.primaryColor,
@@ -171,9 +173,17 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: const Text('Show low stock notifications'),
                 value: settings.showStockAlerts,
                 onChanged: (value) {
+                  print('[SettingsScreen] StockAlerts toggled: ' + value.toString());
                   ref.read(settingsProvider.notifier).updateStockAlerts(value);
                 },
                 activeColor: AppTheme.primaryColor,
+              ),
+              ListTile(
+                leading: const Icon(Icons.warning),
+                title: const Text('Low Stock Threshold'),
+                subtitle: Text('Alert when stock ≤ ${settings.lowStockThreshold}'),
+                trailing: Text('${settings.lowStockThreshold}'),
+                onTap: () => _showThresholdDialog(context, ref, settings.lowStockThreshold),
               ),
               SwitchListTile(
                 secondary: const Icon(Icons.add_circle_outline),
@@ -181,6 +191,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: const Text('Allow item customization'),
                 value: settings.enableAddOns,
                 onChanged: (value) {
+                  print('[SettingsScreen] AddOns toggled: ' + value.toString());
                   ref.read(settingsProvider.notifier).updateAddOns(value);
                 },
                 activeColor: AppTheme.primaryColor,
@@ -191,6 +202,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: const Text('Enable automatic receipt printing'),
                 value: settings.enableReceiptPrinting,
                 onChanged: (value) {
+                  print('[SettingsScreen] ReceiptPrinting toggled: ' + value.toString());
                   ref.read(settingsProvider.notifier).updateReceiptPrinting(value);
                 },
                 activeColor: AppTheme.primaryColor,
@@ -201,6 +213,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: const Text('Automatically backup data'),
                 value: settings.enableBackup,
                 onChanged: (value) {
+                  print('[SettingsScreen] Backup toggled: ' + value.toString());
                   ref.read(settingsProvider.notifier).updateBackup(value);
                 },
                 activeColor: AppTheme.primaryColor,
@@ -253,6 +266,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showResetDialog(BuildContext context, WidgetRef ref) {
+    print('[SettingsScreen] ShowResetDialog called');
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -265,6 +279,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () async {
+              print('[SettingsScreen] Reset to defaults pressed');
               await ref.read(settingsProvider.notifier).resetToDefaults();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -279,6 +294,46 @@ class SettingsScreen extends ConsumerWidget {
               foregroundColor: Colors.white,
             ),
             child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showThresholdDialog(BuildContext context, WidgetRef ref, int current) {
+    print('[SettingsScreen] ShowThresholdDialog called');
+    double value = current.toDouble();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set Low Stock Threshold'),
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Slider(
+                value: value,
+                min: 1,
+                max: 50,
+                divisions: 49,
+                label: value.round().toString(),
+                onChanged: (v) => setState(() => value = v),
+                activeColor: AppTheme.primaryColor,
+              ),
+              Text('Alert when stock is ${value.round()} or less'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              print('[SettingsScreen] Save threshold: ' + value.round().toString());
+              ref.read(settingsProvider.notifier).updateLowStockThreshold(value.round());
+              Navigator.pop(context);
+            },
+            style: AppTheme.primaryButtonStyle,
+            child: const Text('Save'),
           ),
         ],
       ),

@@ -748,8 +748,31 @@ class MockService {
     },
   ];
 
+  // Mock settings storage
+  static Map<String, dynamic> _mockAppSettings = {};
+
+  static Future<void> setAppSettings(Map<String, dynamic> settings) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    _mockAppSettings = Map<String, dynamic>.from(settings);
+  }
+
+  static Map<String, dynamic> getAppSettings() {
+    return Map<String, dynamic>.from(_mockAppSettings);
+  }
+
   // Authentication
   static Map<String, dynamic>? get currentUser => _currentUser;
+
+  static Future<void> updateCurrentUser({String? displayName, String? email}) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (_currentUser == null) return;
+    if (displayName != null && displayName.isNotEmpty) {
+      _currentUser!['displayName'] = displayName;
+    }
+    if (email != null && email.isNotEmpty) {
+      _currentUser!['email'] = email;
+    }
+  }
 
   static Future<Map<String, dynamic>?> signInWithEmailAndPassword(
     String email,

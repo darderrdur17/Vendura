@@ -1,6 +1,6 @@
 # 🍵 Vendura - Professional Cafe Management App
 
-A comprehensive Flutter-based cafe management application with advanced features for menu management, order processing, inventory tracking, and real-time synchronization.
+A comprehensive Flutter-based cafe management application with advanced features for menu management, order processing, inventory tracking, and real-time synchronization. **Available on mobile (iOS/Android) and web platforms.**
 
 ## ✨ Features
 
@@ -9,18 +9,21 @@ A comprehensive Flutter-based cafe management application with advanced features
 - **Add-ons Support**: Comprehensive customization options for drinks and food
 - **Real-time Cart**: Live cart updates with add-ons and pricing
 - **Professional UI**: Modern, eye-catching design with gradients and animations
+- **Cross-Platform**: Works seamlessly on mobile and web
+- **Tip Input & Cash Change**: Accept tips and calculate change for cash payments
 
 ### 📋 **Menu Management**
-- **Comprehensive Item Management**: Add, edit, and organize menu items
-- **Stock Management**: Real-time inventory tracking with low stock alerts
-- **Add-ons System**: Full CRUD operations for item customizations
+- **Comprehensive Item Management**: Add, edit, delete menu items on the fly
+- **Stock Management**: Real-time inventory tracking with low-stock alerts
+- **Add-ons Builder**: Unlimited modifiers (size, milk type, extras), with quantity and availability
 - **Category Organization**: Coffee, Food, Beverages, Tea with detailed add-ons
+- **Inline Stock Editing**: Edit stock and min-stock directly from the menu list
 
 ### ⚙️ **Settings & Configuration**
 - **Auto-Sync System**: All changes automatically synchronize across the app
 - **Smart Feature Toggles**: Enable/disable features globally
-- **Stock Alerts**: Configurable low stock notifications
-- **Receipt Settings**: Customizable receipt printing options
+- **Stock Alerts**: Configurable low stock notifications and thresholds
+- **Receipt Settings**: Customizable receipt (cafe name, slogan, contact info, footer)
 - **Backup & Restore**: Data backup and restoration capabilities
 
 ### 📊 **Inventory Management**
@@ -28,6 +31,31 @@ A comprehensive Flutter-based cafe management application with advanced features
 - **Low Stock Alerts**: Automatic warnings for low inventory
 - **Stock Overview**: Visual dashboard with stock statistics
 - **Minimum Stock Levels**: Configurable alert thresholds
+- **Quick Restock**: Add stock quantities in seconds
+- **Adjust Stock Dialog**: Increase/decrease stock with quick actions
+- **Stock History**: View adjustment history (stub)
+
+### 💳 **Payment & Receipts**
+- **Tip Input**: Accept optional tips at checkout
+- **Cash Change Calculation**: Enter cash received and auto-calculate change
+- **Receipt Generation**: Receipts include tip and change details
+- **Customizable Receipt**: Cafe name, slogan, contact info, and footer
+
+## 🌐 **Cross-Platform Support**
+
+### 📱 Mobile (iOS/Android)
+- **Native Performance**: Optimized for mobile devices
+- **Touch-Optimized**: Large buttons and intuitive gestures
+- **Offline-First**: Works without internet connection
+- **Camera Integration**: QR code scanning and photo capture
+- **Push Notifications**: Real-time alerts and updates
+
+### 🌍 Web (Progressive Web App)
+- **Responsive Design**: Adapts to desktop, tablet, and mobile browsers
+- **PWA Features**: Installable as a native app
+- **Offline Support**: Works without internet connection
+- **Fast Loading**: Optimized for web performance
+- **Cross-Browser**: Works on Chrome, Firefox, Safari, Edge
 
 ## 🚀 Getting Started
 
@@ -51,141 +79,206 @@ A comprehensive Flutter-based cafe management application with advanced features
    ```
 
 3. **Run the app**
+
+   **Mobile:**
    ```bash
    flutter run
    ```
 
+   **Web:**
+   ```bash
+   flutter run -d chrome
+   ```
+
+   **Build for production:**
+   ```bash
+   # Mobile
+   flutter build apk
+   flutter build ios
+   
+   # Web
+   flutter build web
+   ```
+
 ## 🏗️ Architecture
 
-### **State Management**
-- **Riverpod**: Modern state management with providers
-- **Provider Pattern**: Clean separation of concerns
-- **Reactive UI**: Real-time updates across all screens
-
-### **Key Components**
-- **Mock Service**: Simulated backend for development
-- **Settings Provider**: Centralized configuration management
-- **Items Provider**: Menu and inventory state management
-- **Order Provider**: Cart and order processing
-
-### **File Structure**
+### Cross-Platform Architecture
 ```
-lib/
-├── core/
-│   ├── providers/          # State management
-│   ├── services/          # Business logic
-│   └── theme/             # UI theming
-├── data/
-│   └── models/            # Data models
-├── features/
-│   ├── orders/            # Order management
-│   └── settings/          # Settings & configuration
-└── shared/
-    └── presentation/      # Shared UI components
+vendura/
+├── lib/
+│   ├── core/
+│   │   ├── services/
+│   │   │   ├── platform_service.dart    # Platform detection
+│   │   │   └── ...
+│   │   └── ...
+│   ├── shared/
+│   │   └── presentation/
+│   │       └── widgets/
+│   │           └── responsive_layout.dart # Responsive UI
+│   └── ...
+├── web/                                 # Web-specific files
+│   ├── index.html                      # Web entry point
+│   ├── manifest.json                   # PWA manifest
+│   └── flutter_bootstrap.js           # Custom bootstrap
+└── ...
 ```
 
-## 🎨 UI/UX Features
+### Platform-Specific Features
+- **Mobile**: Camera access, push notifications, native dialogs
+- **Web**: PWA installation, browser APIs, responsive design
+- **Shared**: Core business logic, data models, UI components
 
-### **Modern Design**
-- **Professional Color Palette**: Blue-gray theme with accent colors
-- **Gradient Backgrounds**: Eye-catching visual elements
-- **Consistent Spacing**: AppTheme-based spacing system
-- **Shadow Effects**: Depth and visual hierarchy
+## 📱 Platform Features
 
-### **User Experience**
-- **Intuitive Navigation**: Bottom navigation with clear sections
-- **Real-time Feedback**: Success/error messages for all actions
-- **Responsive Design**: Adapts to different screen sizes
-- **Accessibility**: Clear visual indicators and labels
+### Mobile Features
+- ✅ **Camera Integration**: QR code scanning, photo capture
+- ✅ **Push Notifications**: Real-time alerts
+- ✅ **Native Dialogs**: Platform-specific UI components
+- ✅ **Touch Optimization**: Gesture-based interactions
+- ✅ **Offline Storage**: SQLite database
+- ✅ **Background Sync**: Automatic data synchronization
 
-## 🔧 Configuration
+### Web Features
+- ✅ **Progressive Web App**: Installable as native app
+- ✅ **Responsive Design**: Desktop, tablet, mobile layouts
+- ✅ **Offline Support**: Service worker caching
+- ✅ **Fast Loading**: Optimized bundle size
+- ✅ **Cross-Browser**: Chrome, Firefox, Safari, Edge
+- ✅ **PWA Features**: App-like experience
 
-### **Settings Management**
-The app includes a comprehensive settings system with:
+## 🎨 UI/UX Design
 
-- **Auto Sync**: Master toggle for all synchronization
-- **Stock Alerts**: Enable/disable low stock notifications
-- **Add-ons**: Global toggle for item customization
-- **Receipt Printing**: Automatic receipt generation
-- **Auto Backup**: Automatic data backup
+### Responsive Design
+- **Mobile**: Touch-optimized with large buttons
+- **Tablet**: Side-by-side layout with enhanced navigation
+- **Desktop**: Multi-column grid with keyboard shortcuts
+- **Web**: Adaptive layout with browser-specific optimizations
 
-### **Add-ons Categories**
-- **Coffee Add-ons**: Extra shots, syrups, milk options
-- **Syrups**: Vanilla, caramel, hazelnut, etc.
-- **Milk Substitutes**: Almond, soy, oat milk
-- **Food Add-ons**: Extra toppings, sauces, sides
-- **Toppings**: Whipped cream, sprinkles, nuts
-- **Sweeteners**: Sugar, honey, artificial sweeteners
+### Platform-Specific UI
+- **Mobile**: Bottom navigation, swipe gestures, native dialogs
+- **Web**: Top navigation, mouse interactions, browser dialogs
+- **Shared**: Consistent branding and color scheme
 
-## 📱 Screenshots
+## 🔧 Development
 
-*[Screenshots would be added here]*
-
-## 🛠️ Development
-
-### **Adding New Features**
-1. Create feature-specific providers in `lib/core/providers/`
-2. Add UI components in `lib/features/[feature-name]/`
-3. Update navigation in `lib/shared/presentation/screens/main_screen.dart`
-4. Test with `flutter test`
-
-### **State Management**
+### Platform Detection
 ```dart
-// Example: Adding a new provider
-final newFeatureProvider = StateNotifierProvider<NewFeatureNotifier, NewFeatureState>(
-  (ref) => NewFeatureNotifier(),
-);
-```
+import 'package:vendura/core/services/platform_service.dart';
 
-### **Theming**
-```dart
-// Example: Adding new theme colors
-class AppTheme {
-  static const Color newColor = Color(0xFF123456);
-  // ... other theme properties
+if (PlatformService.isWeb) {
+  // Web-specific code
+} else if (PlatformService.isMobile) {
+  // Mobile-specific code
 }
 ```
+
+### Responsive Layout
+```dart
+import 'package:vendura/shared/presentation/widgets/responsive_layout.dart';
+
+ResponsiveLayout(
+  mobile: MobileWidget(),
+  tablet: TabletWidget(),
+  desktop: DesktopWidget(),
+)
+```
+
+### Building for Different Platforms
+```bash
+# Mobile
+flutter build apk --release
+flutter build ios --release
+
+# Web
+flutter build web --release
+
+# All platforms
+flutter build --release
+```
+
+## 📊 Performance
+
+### Mobile Optimization
+- **Native Performance**: Direct platform APIs
+- **Efficient Rendering**: Skia graphics engine
+- **Memory Management**: Optimized for mobile devices
+- **Battery Optimization**: Minimal background processing
+
+### Web Optimization
+- **Fast Loading**: Compressed assets and lazy loading
+- **Caching**: Browser and service worker caching
+- **Bundle Size**: Optimized JavaScript bundle
+- **CDN Ready**: Static asset optimization
+
+## 🚀 Deployment
+
+### Mobile Deployment
+- **Android**: Google Play Store, APK distribution
+- **iOS**: App Store, TestFlight
+- **Enterprise**: Internal distribution
+
+### Web Deployment
+- **Firebase Hosting**: Recommended for PWA features
+- **Netlify**: Easy deployment with CI/CD
+- **Vercel**: Fast deployment with edge functions
+- **Custom Server**: Any web server supporting static files
+
+See [WEB_DEPLOYMENT.md](WEB_DEPLOYMENT.md) for detailed web deployment instructions.
+
+## 🧪 Testing
+
+### Cross-Platform Testing
+```bash
+# Test on all platforms
+flutter test
+
+# Platform-specific testing
+flutter test --platform chrome
+flutter test --platform android
+flutter test --platform ios
+```
+
+### Web Testing
+```bash
+# Test web-specific features
+flutter test --platform chrome
+
+# Performance testing
+flutter build web --analyze-size
+```
+
+## 📈 Analytics
+
+### Platform Analytics
+- **Mobile**: Firebase Analytics, Crashlytics
+- **Web**: Google Analytics, Web Vitals
+- **Cross-Platform**: Custom analytics integration
+
+## 🔒 Security
+
+### Platform Security
+- **Mobile**: App signing, certificate pinning
+- **Web**: HTTPS, CSP headers, secure cookies
+- **Shared**: Data encryption, secure storage
+
+## 📚 Documentation
+
+- [Setup Guide](SETUP.md)
+- [Web Deployment](WEB_DEPLOYMENT.md)
+- [Project Summary](PROJECT_SUMMARY.md)
+- [Development Roadmap](ROADMAP.md)
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Test on multiple platforms
+4. Submit a pull request
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- Flutter team for the amazing framework
-- Riverpod for excellent state management
-- The cafe management community for inspiration
-
-## 📞 Support
-
-For support, email support@vendura.com or create an issue in this repository.
-
 ---
 
-**Made with ❤️ for cafe owners and baristas everywhere** 
-
-## 👤 Profile
-- **Smart Order Processing**: Create orders with unique IDs (ORD-YYYYMMDD-XXXX)
-- **Add-ons Support**: Comprehensive customization options for drinks and food
-- **Real-time Cart**: Live cart updates with add-ons and pricing
-- **Professional UI**: Modern, eye-catching design with gradients and animations
-- **Comprehensive Item Management**: Add, edit, and organize menu items
-- **Stock Management**: Real-time inventory tracking with low stock alerts
-- **Add-ons System**: Full CRUD operations for item customizations
-- **Category Organization**: Coffee, Food, Beverages, Tea with detailed add-ons
-- **Auto-Sync System**: All changes automatically synchronize across the app
-- **Feature Toggles**: Enable/disable features globally
-- **Receipt Settings**: Customizable receipt printing options
-- **Backup & Restore**: Data backup and restoration capabilities
-- **Real-time Stock Tracking**: Live inventory updates
-- **Low Stock Alerts**: Automatic warnings for low inventory
-- **Stock Overview**: Visual dashboard with stock statistics
-- **Minimum Stock Levels**: Configurable alert thresholds 
+**Vendura POS** - Professional cafe management across all platforms. 🍵📱🌐 

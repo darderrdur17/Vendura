@@ -92,4 +92,22 @@ class ItemsNotifier extends StateNotifier<List<Map<String, dynamic>>> {
     final allAddOns = MockService.getAddOnsForItem(itemId);
     return allAddOns.where((addon) => addon['isAvailable'] == true).toList();
   }
+
+  // Update item
+  Future<void> updateItem(String itemId, Map<String, dynamic> itemData) async {
+    await MockService.updateItem(itemId, itemData);
+    refreshItems();
+  }
+
+  // Remove item
+  Future<void> deleteItem(String itemId) async {
+    await MockService.deleteItem(itemId);
+    refreshItems();
+  }
+
+  // Add new item
+  Future<void> addItem(Map<String, dynamic> itemData) async {
+    await MockService.addItem(itemData);
+    refreshItems();
+  }
 } 

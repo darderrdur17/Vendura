@@ -69,7 +69,9 @@
 - **Grid Layout**: Compact 2x2 (mobile) or 5-column (desktop)
 - **Search**: Real-time search through all items
 - **Categories**: Quick filter by category
-- **Add-ons**: Visual indicator for customizable items
+- **Add-ons**: Visual indicator for customizable items, with quantity and availability
+- **Edit/Delete**: Edit and delete menu items directly
+- **Inline Stock Editing**: Edit stock and min-stock from the menu list
 
 ### Cart System
 - **Real-time Updates**: Shows count and total
@@ -80,6 +82,8 @@
 - **Step-by-step**: Clear progression from ticket to payment
 - **Status Indicators**: Visual feedback at each step
 - **Error Prevention**: Disabled states when actions aren't available
+- **Inventory Adjust/Restock**: Adjust stock, quick restock, and view history
+- **Payment Tips & Change**: Enter tip and cash received, auto-calculate change, and display on receipt
 
 ## 🚀 Benefits of Current Design
 

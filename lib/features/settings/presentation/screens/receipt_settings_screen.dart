@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vendura/core/theme/app_theme.dart';
+import 'package:vendura/core/providers/settings_provider.dart';
 
 class ReceiptSettingsScreen extends ConsumerStatefulWidget {
   const ReceiptSettingsScreen({super.key});
@@ -41,6 +42,30 @@ class _ReceiptSettingsScreenState extends ConsumerState<ReceiptSettingsScreen> {
       'isDefault': false,
     },
   ];
+
+  // Receipt content fields
+  late TextEditingController _cafeNameController;
+  late TextEditingController _sloganController;
+  late TextEditingController _footerController;
+  bool _showContactInfo = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final receiptSettings = ref.read(receiptSettingsProvider);
+    _cafeNameController = TextEditingController(text: receiptSettings['cafeName'] ?? 'Vendura Cafe');
+    _sloganController = TextEditingController(text: receiptSettings['slogan'] ?? 'Brewed with Passion');
+    _footerController = TextEditingController(text: receiptSettings['footer'] ?? 'Thank you for your business!');
+    _showContactInfo = receiptSettings['showContactInfo'] ?? true;
+  }
+
+  @override
+  void dispose() {
+    _cafeNameController.dispose();
+    _sloganController.dispose();
+    _footerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -569,24 +594,30 @@ class _ReceiptSettingsScreenState extends ConsumerState<ReceiptSettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
+              controller: _cafeNameController,
               decoration: const InputDecoration(
-                labelText: 'Business Name',
+                labelText: 'Cafe Name',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: AppTheme.spacingM),
             TextField(
+              controller: _sloganController,
               decoration: const InputDecoration(
-                labelText: 'Address',
+                labelText: 'Slogan',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: AppTheme.spacingM),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Phone',
-                border: OutlineInputBorder(),
-              ),
+            SwitchListTile(
+              title: const Text('Show Contact Info'),
+              value: _showContactInfo,
+              onChanged: (value) {
+                setState(() {
+                  _showContactInfo = value;
+                });
+              },
+              activeColor: AppTheme.primaryColor,
             ),
           ],
         ),
@@ -596,7 +627,14 @@ class _ReceiptSettingsScreenState extends ConsumerState<ReceiptSettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              await ref.read(settingsProvider.notifier).updateReceiptSettings({
+                ...ref.read(receiptSettingsProvider),
+                'cafeName': _cafeNameController.text,
+                'slogan': _sloganController.text,
+                'showContactInfo': _showContactInfo,
+                'footer': _footerController.text,
+              });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -619,6 +657,7 @@ class _ReceiptSettingsScreenState extends ConsumerState<ReceiptSettingsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Footer Message'),
         content: TextField(
+          controller: _footerController,
           maxLines: 3,
           decoration: const InputDecoration(
             labelText: 'Footer Text',
@@ -632,7 +671,14 @@ class _ReceiptSettingsScreenState extends ConsumerState<ReceiptSettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              await ref.read(settingsProvider.notifier).updateReceiptSettings({
+                ...ref.read(receiptSettingsProvider),
+                'cafeName': _cafeNameController.text,
+                'slogan': _sloganController.text,
+                'showContactInfo': _showContactInfo,
+                'footer': _footerController.text,
+              });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

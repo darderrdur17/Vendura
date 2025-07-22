@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vendura/core/services/mock_service.dart';
 
 // Settings state class
 class SettingsState {
@@ -12,6 +13,7 @@ class SettingsState {
   final Map<String, dynamic> receiptSettings;
   final Map<String, dynamic> backupSettings;
   final Map<String, dynamic> syncSettings;
+  final int lowStockThreshold;
 
   const SettingsState({
     this.autoSync = true,
@@ -24,6 +26,7 @@ class SettingsState {
     this.receiptSettings = const {},
     this.backupSettings = const {},
     this.syncSettings = const {},
+    this.lowStockThreshold = 5,
   });
 
   SettingsState copyWith({
@@ -37,6 +40,7 @@ class SettingsState {
     Map<String, dynamic>? receiptSettings,
     Map<String, dynamic>? backupSettings,
     Map<String, dynamic>? syncSettings,
+    int? lowStockThreshold,
   }) {
     return SettingsState(
       autoSync: autoSync ?? this.autoSync,
@@ -49,6 +53,39 @@ class SettingsState {
       receiptSettings: receiptSettings ?? this.receiptSettings,
       backupSettings: backupSettings ?? this.backupSettings,
       syncSettings: syncSettings ?? this.syncSettings,
+      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'autoSync': autoSync,
+      'showStockAlerts': showStockAlerts,
+      'enableAddOns': enableAddOns,
+      'enableReceiptPrinting': enableReceiptPrinting,
+      'enableBackup': enableBackup,
+      'defaultCurrency': defaultCurrency,
+      'defaultLanguage': defaultLanguage,
+      'receiptSettings': receiptSettings,
+      'backupSettings': backupSettings,
+      'syncSettings': syncSettings,
+      'lowStockThreshold': lowStockThreshold,
+    };
+  }
+
+  factory SettingsState.fromMap(Map<String, dynamic> map) {
+    return SettingsState(
+      autoSync: map['autoSync'] ?? true,
+      showStockAlerts: map['showStockAlerts'] ?? true,
+      enableAddOns: map['enableAddOns'] ?? true,
+      enableReceiptPrinting: map['enableReceiptPrinting'] ?? true,
+      enableBackup: map['enableBackup'] ?? true,
+      defaultCurrency: map['defaultCurrency'] ?? 'USD',
+      defaultLanguage: map['defaultLanguage'] ?? 'en',
+      receiptSettings: Map<String, dynamic>.from(map['receiptSettings'] ?? {}),
+      backupSettings: Map<String, dynamic>.from(map['backupSettings'] ?? {}),
+      syncSettings: Map<String, dynamic>.from(map['syncSettings'] ?? {}),
+      lowStockThreshold: map['lowStockThreshold'] ?? 5,
     );
   }
 }
@@ -60,14 +97,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   void _loadSettings() {
-    // Load settings from storage (mock for now)
-    // In a real app, this would load from SharedPreferences or secure storage
+    final map = MockService.getAppSettings();
+    if (map.isNotEmpty) {
+      state = SettingsState.fromMap(map);
+    }
   }
 
   Future<void> _saveSettings() async {
-    // Save settings to storage (mock for now)
-    // In a real app, this would save to SharedPreferences or secure storage
-    await Future.delayed(const Duration(milliseconds: 100));
+    await MockService.setAppSettings(state.toMap());
   }
 
   // Update auto sync setting
@@ -130,6 +167,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _saveSettings();
   }
 
+  // Update low stock threshold
+  Future<void> updateLowStockThreshold(int value) async {
+    state = state.copyWith(lowStockThreshold: value);
+    await _saveSettings();
+  }
+
   // Reset all settings to defaults
   Future<void> resetToDefaults() async {
     state = const SettingsState();
@@ -181,4 +224,8 @@ final backupSettingsProvider = Provider<Map<String, dynamic>>((ref) {
 
 final syncSettingsProvider = Provider<Map<String, dynamic>>((ref) {
   return ref.watch(settingsProvider).syncSettings;
+});
+
+final lowStockThresholdProvider = Provider<int>((ref) {
+  return ref.watch(settingsProvider).lowStockThreshold;
 }); 
