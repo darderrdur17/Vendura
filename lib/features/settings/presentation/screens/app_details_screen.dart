@@ -130,6 +130,20 @@ class AppDetailsScreen extends ConsumerWidget {
               Icons.analytics,
               Colors.teal,
             ),
+
+            _buildFeatureCard(
+              'Menu Management',
+              'Full CRUD operations and category organization',
+              Icons.restaurant_menu,
+              Colors.brown,
+            ),
+
+            _buildFeatureCard(
+              'Settings & Configuration',
+              'Auto-sync, feature toggles, backup & restore',
+              Icons.settings,
+              Colors.indigo,
+            ),
             
             const SizedBox(height: AppTheme.spacingL),
             

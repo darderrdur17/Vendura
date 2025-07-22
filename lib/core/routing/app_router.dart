@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vendura/features/auth/presentation/screens/login_screen.dart';
 import 'package:vendura/features/auth/presentation/screens/splash_screen.dart';
 import 'package:vendura/features/orders/presentation/screens/order_screen.dart';
+import 'package:vendura/features/orders/presentation/screens/order_details_screen.dart';
 import 'package:vendura/features/orders/presentation/screens/orders_list_screen.dart';
 import 'package:vendura/features/payments/presentation/screens/payment_screen.dart';
 import 'package:vendura/features/receipts/presentation/screens/receipts_screen.dart';
@@ -19,6 +20,8 @@ import 'package:vendura/features/settings/presentation/screens/sync_settings_scr
 import 'package:vendura/features/settings/presentation/screens/app_details_screen.dart';
 import 'package:vendura/features/settings/presentation/screens/help_support_screen.dart';
 import 'package:vendura/shared/presentation/screens/main_screen.dart';
+import 'package:vendura/features/profile/presentation/screens/profile_screen.dart';
+import 'package:vendura/features/refunds/presentation/screens/refund_detail_screen.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -26,10 +29,13 @@ class AppRouter {
   static const String main = '/main';
   static const String orders = '/orders';
   static const String order = '/order';
+  static const String orderDetails = '/order-details';
   static const String payment = '/payment';
   static const String receipts = '/receipts';
   static const String reports = '/reports';
   static const String settings = '/settings';
+  static const String profile = '/profile';
+  static const String refundDetail = '/refund-detail';
 
   static String get initialRoute => splash;
 
@@ -64,13 +70,14 @@ class AppRouter {
           ),
         );
       
-      case '/payment':
-        final args = routeSettings.arguments as Map<String, dynamic>?;
+      case '/order-details':
         return MaterialPageRoute(
-          builder: (_) => PaymentScreen(
-            orderId: args?['orderId'],
-            totalAmount: args?['totalAmount'],
-          ),
+          builder: (_) => const OrderDetailsScreen(),
+        );
+      
+      case '/payment':
+        return MaterialPageRoute(
+          builder: (_) => const PaymentScreen(),
         );
       
       case '/receipts':
@@ -145,6 +152,13 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const HelpSupportScreen(),
         );
+      
+      case '/profile':
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
+
+      case '/refund-detail':
+        final args = routeSettings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(builder: (_) => RefundDetailScreen(refundId: args?['refundId'] ?? ''));
       
       default:
         return MaterialPageRoute(

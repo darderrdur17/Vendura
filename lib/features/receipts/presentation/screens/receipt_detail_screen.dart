@@ -4,6 +4,7 @@ import 'package:vendura/core/theme/app_theme.dart';
 import 'package:vendura/core/services/mock_service.dart';
 import 'package:vendura/data/models/receipt.dart';
 import 'package:vendura/features/receipts/presentation/widgets/receipt_template.dart';
+import 'package:vendura/core/services/receipt_share_service.dart';
 
 class ReceiptDetailScreen extends ConsumerStatefulWidget {
   final String receiptId;
@@ -29,23 +30,35 @@ class _ReceiptDetailScreenState extends ConsumerState<ReceiptDetailScreen> {
 
   Future<void> _loadReceipt() async {
     try {
-      final receipts = ref.watch(receiptsProvider);
-      final receiptData = receipts.firstWhere(
-        (receipt) => receipt['id'] == widget.receiptId,
-        orElse: () => {},
-      );
-
-      if (receiptData.isNotEmpty) {
+      // Try to get receipt directly from MockService
+      final receiptData = MockService.getReceipt(widget.receiptId);
+      
+      if (receiptData != null) {
         setState(() {
           _receipt = Receipt.fromJson(receiptData);
           _isLoading = false;
         });
       } else {
-        setState(() {
-          _isLoading = false;
-        });
+        // Fallback to provider
+        final receipts = ref.read(receiptsProvider);
+        final fallbackReceiptData = receipts.firstWhere(
+          (receipt) => receipt['id'] == widget.receiptId,
+          orElse: () => {},
+        );
+        
+        if (fallbackReceiptData.isNotEmpty) {
+          setState(() {
+            _receipt = Receipt.fromJson(fallbackReceiptData);
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
+      print('Error loading receipt: $e');
       setState(() {
         _isLoading = false;
       });
@@ -56,10 +69,15 @@ class _ReceiptDetailScreenState extends ConsumerState<ReceiptDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Receipt #${widget.receiptId.substring(widget.receiptId.length - 6)}'),
+        title: Text('Receipt #${_getReceiptDisplayId()}'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            onPressed: _previewReceipt,
+            icon: const Icon(Icons.preview),
+            tooltip: 'Preview Receipt',
+          ),
           IconButton(
             onPressed: _printReceipt,
             icon: const Icon(Icons.print),
@@ -88,6 +106,12 @@ class _ReceiptDetailScreenState extends ConsumerState<ReceiptDetailScreen> {
               ? _buildErrorState()
               : _buildReceiptView(),
     );
+  }
+
+  String _getReceiptDisplayId() {
+    if (widget.receiptId.isEmpty) return 'N/A';
+    if (widget.receiptId.length <= 6) return widget.receiptId;
+    return widget.receiptId.substring(widget.receiptId.length - 6);
   }
 
   Widget _buildErrorState() {
@@ -240,24 +264,33 @@ class _ReceiptDetailScreenState extends ConsumerState<ReceiptDetailScreen> {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  void _printReceipt() {
-    // TODO: Implement printing functionality
+  void _previewReceipt() {
+    // TODO: Implement preview functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Printing receipt ${_receipt!.id}'),
+        content: Text('Previewing receipt ${_receipt!.id}'),
         backgroundColor: AppTheme.infoBlue,
       ),
     );
   }
 
+  void _printReceipt() async {
+    if (_receipt == null) return;
+    try {
+      await ReceiptShareService.printReceipt(_receipt!);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Printing failed: $e'),
+          backgroundColor: AppTheme.errorRed,
+        ),
+      );
+    }
+  }
+
   void _emailReceipt() {
-    // TODO: Implement email functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Emailing receipt ${_receipt!.id}'),
-        backgroundColor: AppTheme.infoBlue,
-      ),
-    );
+    if (_receipt == null) return;
+    ReceiptShareService.emailReceipt(_receipt!);
   }
 
   void _shareReceipt() {

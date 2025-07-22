@@ -455,13 +455,7 @@ class _RefundsScreenState extends ConsumerState<RefundsScreen> {
   }
 
   void _viewRefund(Map<String, dynamic> refund) {
-    // TODO: Navigate to refund detail screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Viewing refund ${refund['id']}'),
-        backgroundColor: AppTheme.primaryColor,
-      ),
-    );
+    Navigator.pushNamed(context, '/refund-detail', arguments: {'refundId': refund['id']});
   }
 
   void _processRefund(Map<String, dynamic> refund) {

@@ -573,15 +573,22 @@ class MockService {
   static final List<Map<String, dynamic>> _mockReceipts = [
     // Generate some sample receipts
     {
-      'id': 'receipt-1',
-      'orderId': 'order-1',
+      'id': 'RCP-20241215-0001',
+      'orderId': 'ORD-20241215-0001',
       'items': [
         {
           'id': 'item-1',
           'name': 'Espresso',
-          'price': 3.50,
+          'price': 7.00,
           'quantity': 2,
           'imageUrl': 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=200',
+          'addOns': [
+            {
+              'id': 'addon-1',
+              'name': 'Extra Shot',
+              'price': 1.00,
+            },
+          ],
         },
         {
           'id': 'item-16',
@@ -600,8 +607,8 @@ class MockService {
       'createdAt': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
     },
     {
-      'id': 'receipt-2',
-      'orderId': 'order-2',
+      'id': 'RCP-20241215-0002',
+      'orderId': 'ORD-20241215-0002',
       'items': [
         {
           'id': 'item-3',
@@ -609,6 +616,13 @@ class MockService {
           'price': 4.50,
           'quantity': 1,
           'imageUrl': 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200',
+          'addOns': [
+            {
+              'id': 'addon-6',
+              'name': 'Almond Milk',
+              'price': 0.75,
+            },
+          ],
         },
         {
           'id': 'item-21',
@@ -620,7 +634,7 @@ class MockService {
         {
           'id': 'item-18',
           'name': 'Blueberry Muffin',
-          'price': 3.75,
+          'price': 7.50,
           'quantity': 2,
           'imageUrl': 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200',
         },
@@ -634,8 +648,8 @@ class MockService {
       'createdAt': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
     },
     {
-      'id': 'receipt-3',
-      'orderId': 'order-3',
+      'id': 'RCP-20241215-0003',
+      'orderId': 'ORD-20241215-0003',
       'items': [
         {
           'id': 'item-8',
@@ -643,6 +657,7 @@ class MockService {
           'price': 4.00,
           'quantity': 1,
           'imageUrl': 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200',
+          'comment': 'Extra hot please',
         },
         {
           'id': 'item-26',
@@ -650,6 +665,13 @@ class MockService {
           'price': 8.50,
           'quantity': 1,
           'imageUrl': 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=200',
+          'addOns': [
+            {
+              'id': 'addon-8',
+              'name': 'Extra Avocado',
+              'price': 1.50,
+            },
+          ],
         },
       ],
       'subtotal': 12.50,
@@ -666,7 +688,7 @@ class MockService {
   static final List<Map<String, dynamic>> _mockRefunds = [
     {
       'id': 'refund-1',
-      'receiptId': 'receipt-1',
+      'receiptId': 'RCP-20241215-0001',
       'orderId': 'order-1',
       'type': 'partial',
       'status': 'completed',
@@ -692,7 +714,7 @@ class MockService {
     },
     {
       'id': 'refund-2',
-      'receiptId': 'receipt-2',
+      'receiptId': 'RCP-20241215-0002',
       'orderId': 'order-2',
       'type': 'full',
       'status': 'pending',
@@ -853,12 +875,11 @@ class MockService {
   // Orders
   static Future<String> addOrder(Map<String, dynamic> orderData) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    
-    // Generate unique order ID with date + order number
     final now = DateTime.now();
     final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-    final orderNumber = (_mockOrders.length + 1).toString().padLeft(4, '0');
-    final orderId = 'ORD-$dateStr-$orderNumber';
+    final timeStr = '${now.hour}${now.minute}${now.second}'.padLeft(6, '0');
+    final orderNumber = (_mockOrders.length + 1).toString().padLeft(3, '0');
+    final orderId = 'ORD-$dateStr-$timeStr-$orderNumber';
     
     orderData['id'] = orderId;
     orderData['createdAt'] = now.toIso8601String();
@@ -894,9 +915,14 @@ class MockService {
   // Receipts
   static Future<String> addReceipt(Map<String, dynamic> receiptData) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    final receiptId = 'receipt-${_mockReceipts.length + 1}';
+    final now = DateTime.now();
+    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final timeStr = '${now.hour}${now.minute}${now.second}'.padLeft(6, '0');
+    final receiptNumber = (_mockReceipts.length + 1).toString().padLeft(3, '0');
+    final receiptId = 'RCP-$dateStr-$timeStr-$receiptNumber';
+    
     receiptData['id'] = receiptId;
-    receiptData['createdAt'] = DateTime.now().toIso8601String();
+    receiptData['createdAt'] = now.toIso8601String();
     _mockReceipts.add(receiptData);
     return receiptId;
   }
@@ -911,6 +937,14 @@ class MockService {
 
   static List<Map<String, dynamic>> getReceipts() {
     return List.from(_mockReceipts);
+  }
+
+  static Map<String, dynamic>? getReceipt(String receiptId) {
+    try {
+      return _mockReceipts.firstWhere((receipt) => receipt['id'] == receiptId);
+    } catch (e) {
+      return null;
+    }
   }
 
   static List<Map<String, dynamic>> getReceiptsByDateRange(

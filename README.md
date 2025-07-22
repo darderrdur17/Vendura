@@ -171,3 +171,21 @@ For support, email support@vendura.com or create an issue in this repository.
 ---
 
 **Made with ❤️ for cafe owners and baristas everywhere** 
+
+## 👤 Profile
+- **Smart Order Processing**: Create orders with unique IDs (ORD-YYYYMMDD-XXXX)
+- **Add-ons Support**: Comprehensive customization options for drinks and food
+- **Real-time Cart**: Live cart updates with add-ons and pricing
+- **Professional UI**: Modern, eye-catching design with gradients and animations
+- **Comprehensive Item Management**: Add, edit, and organize menu items
+- **Stock Management**: Real-time inventory tracking with low stock alerts
+- **Add-ons System**: Full CRUD operations for item customizations
+- **Category Organization**: Coffee, Food, Beverages, Tea with detailed add-ons
+- **Auto-Sync System**: All changes automatically synchronize across the app
+- **Feature Toggles**: Enable/disable features globally
+- **Receipt Settings**: Customizable receipt printing options
+- **Backup & Restore**: Data backup and restoration capabilities
+- **Real-time Stock Tracking**: Live inventory updates
+- **Low Stock Alerts**: Automatic warnings for low inventory
+- **Stock Overview**: Visual dashboard with stock statistics
+- **Minimum Stock Levels**: Configurable alert thresholds 

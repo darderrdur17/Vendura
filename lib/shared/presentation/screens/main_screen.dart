@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vendura/core/theme/app_theme.dart';
 import 'package:vendura/features/orders/presentation/screens/orders_list_screen.dart';
+import 'package:vendura/features/orders/presentation/screens/order_screen.dart';
 import 'package:vendura/features/receipts/presentation/screens/receipts_screen.dart';
 import 'package:vendura/features/refunds/presentation/screens/refunds_screen.dart';
 import 'package:vendura/features/reports/presentation/screens/reports_screen.dart';
@@ -18,33 +19,28 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const OrdersListScreen(),
+    const OrderScreen(), // New Order is now the main page
     const ReceiptsScreen(),
+    const OrdersListScreen(),
     const RefundsScreen(),
-    const ReportsScreen(),
-    const SettingsScreen(),
   ];
 
-  final List<BottomNavigationBarItem> _navigationItems = [
+  final List<BottomNavigationBarItem> _bottomNavItems = [
     const BottomNavigationBarItem(
-      icon: Icon(Icons.shopping_cart),
-      label: 'Orders',
+      icon: Icon(Icons.add_shopping_cart),
+      label: 'New Order',
     ),
     const BottomNavigationBarItem(
-      icon: Icon(Icons.receipt),
+      icon: Icon(Icons.receipt_long),
       label: 'Receipts',
+    ),
+    const BottomNavigationBarItem(
+      icon: Icon(Icons.list_alt),
+      label: 'Orders',
     ),
     const BottomNavigationBarItem(
       icon: Icon(Icons.money_off),
       label: 'Refunds',
-    ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.analytics),
-      label: 'Reports',
-    ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.settings),
-      label: 'Settings',
     ),
   ];
 
@@ -74,7 +70,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             });
           },
           type: BottomNavigationBarType.fixed,
-          items: _navigationItems,
+          items: _bottomNavItems,
           selectedItemColor: AppTheme.primaryColor,
           unselectedItemColor: Colors.grey[600],
           backgroundColor: Colors.white,
@@ -83,7 +79,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
         ),
       ),
-      floatingActionButton: _currentIndex == 0
+      floatingActionButton: _currentIndex == 1
           ? Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

@@ -7,6 +7,7 @@ class OrderItem {
   final int quantity;
   final String? imageUrl;
   final List<Map<String, dynamic>>? addOns;
+  final String? comment; // Added comment field for special instructions
 
   const OrderItem({
     required this.id,
@@ -15,6 +16,7 @@ class OrderItem {
     required this.quantity,
     this.imageUrl,
     this.addOns,
+    this.comment,
   });
 
   // Create from JSON
@@ -26,8 +28,9 @@ class OrderItem {
       quantity: json['quantity'] as int,
       imageUrl: json['imageUrl'] as String?,
       addOns: json['addOns'] != null 
-          ? (json['addOns'] as List<dynamic>).cast<Map<String, dynamic>>()
+          ? List<Map<String, dynamic>>.from(json['addOns'] as List)
           : null,
+      comment: json['comment'] as String?,
     );
   }
 
@@ -40,6 +43,7 @@ class OrderItem {
       'quantity': quantity,
       'imageUrl': imageUrl,
       'addOns': addOns,
+      'comment': comment,
     };
   }
 
@@ -51,6 +55,7 @@ class OrderItem {
     int? quantity,
     String? imageUrl,
     List<Map<String, dynamic>>? addOns,
+    String? comment,
   }) {
     return OrderItem(
       id: id ?? this.id,
@@ -59,6 +64,7 @@ class OrderItem {
       quantity: quantity ?? this.quantity,
       imageUrl: imageUrl ?? this.imageUrl,
       addOns: addOns ?? this.addOns,
+      comment: comment ?? this.comment,
     );
   }
 
@@ -83,64 +89,80 @@ enum OrderStatus {
 class Order {
   final String id;
   final List<OrderItem> items;
+  final double totalAmount;
   final OrderStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final double totalAmount;
+  final String? orderType; // Dine-in or Takeaway
+  final double? discountPercentage; // Discount percentage applied
+  final String? discountName; // Name of the discount applied
 
   const Order({
     required this.id,
     required this.items,
+    required this.totalAmount,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
-    required this.totalAmount,
+    this.orderType,
+    this.discountPercentage,
+    this.discountName,
   });
 
-  // Create from JSON
-  factory Order.fromJson(Map<String, dynamic> json) {
-    return Order(
-      id: json['id'] as String,
-      items: (json['items'] as List<dynamic>)
-          .map((item) => OrderItem.fromJson(item as Map<String, dynamic>))
-          .toList(),
-      status: OrderStatus.values.firstWhere(
-        (e) => e.toString() == 'OrderStatus.${json['status']}',
-      ),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      totalAmount: (json['totalAmount'] as num).toDouble(),
-    );
-  }
-
-  // Convert to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'items': items.map((item) => item.toJson()).toList(),
-      'status': status.toString().split('.').last,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'totalAmount': totalAmount,
-    };
-  }
-
-  // Copy with modifications
   Order copyWith({
     String? id,
     List<OrderItem>? items,
+    double? totalAmount,
     OrderStatus? status,
     DateTime? createdAt,
     DateTime? updatedAt,
-    double? totalAmount,
+    String? orderType,
+    double? discountPercentage,
+    String? discountName,
   }) {
     return Order(
       id: id ?? this.id,
       items: items ?? this.items,
+      totalAmount: totalAmount ?? this.totalAmount,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? DateTime.now(),
-      totalAmount: totalAmount ?? this.totalAmount,
+      updatedAt: updatedAt ?? this.updatedAt,
+      orderType: orderType ?? this.orderType,
+      discountPercentage: discountPercentage ?? this.discountPercentage,
+      discountName: discountName ?? this.discountName,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'items': items.map((item) => item.toJson()).toList(),
+      'totalAmount': totalAmount,
+      'status': status.name,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'orderType': orderType,
+      'discountPercentage': discountPercentage,
+      'discountName': discountName,
+    };
+  }
+
+  factory Order.fromJson(Map<String, dynamic> json) {
+    return Order(
+      id: json['id'] as String,
+      items: (json['items'] as List)
+          .map((item) => OrderItem.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      totalAmount: (json['totalAmount'] as num).toDouble(),
+      status: OrderStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => OrderStatus.pending,
+      ),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      orderType: json['orderType'] as String?,
+      discountPercentage: json['discountPercentage'] as double?,
+      discountName: json['discountName'] as String?,
     );
   }
 

@@ -392,12 +392,17 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
   }
 
   void _viewOrder(Map<String, dynamic> order) {
+    final items = (order['items'] as List<dynamic>?) ?? [];
+    final cart = items.map((e) => OrderItem.fromJson(e as Map<String, dynamic>)).toList();
+    final total = (order['total'] as num?)?.toDouble() ?? 0.0;
+
     Navigator.pushNamed(
       context,
-      '/order',
+      '/order-details',
       arguments: {
-        'orderId': order['id'],
-        'isNewOrder': false,
+        'cartItems': cart,
+        'totalAmount': total,
+        'readonly': true,
       },
     );
   }
