@@ -31,7 +31,8 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     super.initState();
     if (widget.categories.isNotEmpty) {
       _selectedCategory = widget.categories.first;
-      }
+    }
+  }
 
   void _createTestImage() {
     print('Creating test image...');
@@ -45,7 +46,6 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
       );
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -140,17 +140,6 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
                                              Expanded(
                          child: Column(
                            children: [
-                             ElevatedButton.icon(
-                               onPressed: _pickImage,
-                               icon: const Icon(Icons.photo_library),
-                               label: const Text('Select Image'),
-                               style: ElevatedButton.styleFrom(
-                                 backgroundColor: AppTheme.primaryColor,
-                                 foregroundColor: Colors.white,
-                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                               ),
-                             ),
-                             const SizedBox(height: 8),
                              ElevatedButton.icon(
                                onPressed: _createTestImage,
                                icon: const Icon(Icons.add_a_photo),
@@ -248,69 +237,5 @@ class _AddItemDialogState extends ConsumerState<AddItemDialog> {
     // Refresh settings/menu items provider so new item is visible across app
     ref.read(itemsProvider.notifier).refreshItems();
     if (mounted) Navigator.pop(context);
-  }
-
-  Future<void> _pickImage() async {
-    try {
-      print('Starting image picker...');
-      
-      // Try camera first, then gallery if camera fails
-      XFile? picked;
-      
-      try {
-        print('Trying camera source...');
-        picked = await _picker.pickImage(
-          source: ImageSource.camera,
-          maxWidth: 800,
-          imageQuality: 85,
-        );
-        print('Camera result: ${picked?.path ?? 'null'}');
-      } catch (cameraError) {
-        print('Camera failed: $cameraError');
-        print('Trying gallery source...');
-        picked = await _picker.pickImage(
-          source: ImageSource.gallery, 
-          maxWidth: 800,
-          imageQuality: 85,
-        );
-        print('Gallery result: ${picked?.path ?? 'null'}');
-      }
-      
-      if (picked != null) {
-        print('Image selected: ${picked.path}');
-        setState(() {
-          _selectedImage = File(picked.path);
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Image selected successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        print('No image selected');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No image selected'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error picking image: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 } 
