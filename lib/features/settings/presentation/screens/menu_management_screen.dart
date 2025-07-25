@@ -5,6 +5,10 @@ import 'package:vendura/core/services/mock_service.dart';
 import 'package:vendura/core/providers/items_provider.dart';
 import 'package:vendura/core/providers/settings_provider.dart';
 import 'package:vendura/shared/presentation/widgets/animated_card.dart';
+import 'package:vendura/features/inventory/presentation/widgets/add_item_dialog.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:vendura/core/services/image_service.dart';
 
 class MenuManagementScreen extends ConsumerStatefulWidget {
   const MenuManagementScreen({super.key});
@@ -198,20 +202,24 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
       children: [
         Row(
           children: [
-            // Item Image
+            // Item Image (supports local or remote)
             if (imageUrl != null)
-              Container(
-                width: 60,
-                height: 60,
-                margin: const EdgeInsets.only(right: AppTheme.spacingM),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
+              Builder(builder: (context) {
+                final isRemote = imageUrl.startsWith('http');
+                final provider = isRemote ? NetworkImage(imageUrl) : FileImage(File(imageUrl)) as ImageProvider;
+                return Container(
+                  width: 60,
+                  height: 60,
+                  margin: const EdgeInsets.only(right: AppTheme.spacingM),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                    image: DecorationImage(
+                      image: provider,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             
             Expanded(
               child: Column(
@@ -444,73 +452,9 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
   }
 
   void _showAddItemDialog() {
-    final nameCtrl = TextEditingController();
-    final priceCtrl = TextEditingController();
-    final categoryCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final imageCtrl = TextEditingController();
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Item'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: priceCtrl,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Price'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: categoryCtrl,
-                decoration: const InputDecoration(labelText: 'Category'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descCtrl,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: imageCtrl,
-                decoration: const InputDecoration(labelText: 'Image URL'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
-              final data = {
-                'name': nameCtrl.text.trim(),
-                'price': price,
-                'category': categoryCtrl.text.trim().isEmpty ? 'Uncategorized' : categoryCtrl.text.trim(),
-                'description': descCtrl.text.trim(),
-                'imageUrl': imageCtrl.text.trim(),
-                'isAvailable': true,
-              };
-              await ref.read(itemsProvider.notifier).addItem(data);
-              if (mounted) Navigator.pop(context);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item added')));
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (context) => AddItemDialog(categories: categories),
     );
   }
 
@@ -551,7 +495,9 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
     final priceController = TextEditingController(text: item['price'].toString());
     final categoryController = TextEditingController(text: item['category']);
     final descriptionController = TextEditingController(text: item['description'] ?? '');
-    final imageUrlController = TextEditingController(text: item['imageUrl'] ?? '');
+    File? selectedImage;
+    String? currentImageUrl = item['imageUrl'] as String?;
+    final ImagePicker picker = ImagePicker();
     bool isAvailable = item['isAvailable'] ?? true;
     int stockQuantity = item['stockQuantity'] ?? 0;
     int minStockLevel = item['minStockLevel'] ?? 0;
@@ -599,12 +545,65 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
                   maxLines: 2,
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: imageUrlController,
-                  decoration: const InputDecoration(
-                    labelText: 'Image URL',
-                    border: OutlineInputBorder(),
-                  ),
+                // Image picker & preview
+                Row(
+                  children: [
+                    Builder(builder: (context) {
+                      ImageProvider? provider;
+                      if (selectedImage != null) {
+                        provider = FileImage(selectedImage!);
+                                             } else if (currentImageUrl != null) {
+                         provider = currentImageUrl!.startsWith('http')
+                             ? NetworkImage(currentImageUrl!)
+                             : FileImage(File(currentImageUrl!)) as ImageProvider;
+                       }
+
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey[300],
+                          child: provider != null
+                              ? Image(
+                                  image: provider,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                )
+                              : const Icon(Icons.image, size: 30, color: Colors.white),
+                        ),
+                      );
+                    }),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800);
+                        if (picked != null) {
+                          setDialogState(() {
+                            selectedImage = File(picked.path);
+                            currentImageUrl = null;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Change Image'),
+                      style: AppTheme.primaryButtonStyle,
+                    ),
+                    if (selectedImage != null || currentImageUrl != null) ...[
+                      const SizedBox(width: 6),
+                      IconButton(
+                        tooltip: 'Remove Image',
+                        onPressed: () {
+                          setDialogState(() {
+                            selectedImage = null;
+                            currentImageUrl = null;
+                          });
+                        },
+                        icon: const Icon(Icons.delete_forever, color: Colors.red),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -657,13 +656,20 @@ class _MenuManagementScreenState extends ConsumerState<MenuManagementScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                String? imagePath;
+                if (selectedImage != null) {
+                  imagePath = await ImageService.saveImage(selectedImage!);
+                } else {
+                  imagePath = currentImageUrl;
+                }
+
                 final updatedItem = {
                   ...item,
                   'name': nameController.text,
                   'price': double.tryParse(priceController.text) ?? 0.0,
                   'category': categoryController.text,
                   'description': descriptionController.text,
-                  'imageUrl': imageUrlController.text,
+                  'imageUrl': imagePath,
                   'isAvailable': isAvailable,
                   'stockQuantity': stockQuantity,
                   'minStockLevel': minStockLevel,
