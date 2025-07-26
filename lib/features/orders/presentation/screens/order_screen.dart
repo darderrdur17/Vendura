@@ -61,6 +61,22 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     _sessionSub = ref.listenManual<int>(orderSessionProvider, (prev, next) {
       _resetOrder();
     });
+    // If editing an existing order, load its data
+    if (!widget.isNewOrder && widget.orderId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final orderData = MockService.getOrder(widget.orderId!);
+        if (orderData != null) {
+          final items = (orderData['items'] as List<dynamic>?)
+              ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
+              .toList();
+          setState(() {
+            _cartItems.clear();
+            if (items != null) _cartItems.addAll(items);
+            _isTicketCreated = _cartItems.isNotEmpty;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -91,7 +107,35 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     return Scaffold(
       appBar: ResponsiveAppBar(
         title: 'Ticket',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back to Main',
+          onPressed: _goBackToMain,
+        ),
         actions: [
+          // Mini menu for new or ongoing order
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Order Actions',
+            onSelected: (value) {
+              if (value == 'new') {
+                Navigator.pushNamed(
+                  context,
+                  '/order',
+                  arguments: {'isNewOrder': true},
+                );
+              } else if (value == 'ongoing') {
+                _showOngoingOrdersMenu();
+              } else if (value == 'delete') {
+                _deleteTicket();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'new', child: Text('New Order')),
+              const PopupMenuItem(value: 'ongoing', child: Text('Ongoing Order')),
+              const PopupMenuItem(value: 'delete', child: Text('Delete Ticket')),
+            ],
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -134,7 +178,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       ),
       floatingActionButton: _cartItems.isNotEmpty
           ? FloatingActionButton.extended(
-              onPressed: _proceedToOrderDetails,
+              onPressed: _showCartSheet,
               icon: const Icon(Icons.shopping_cart),
               label: Text('Cart (${_cartItems.length})  |  \$${totalAmount.toStringAsFixed(2)}'),
               backgroundColor: AppTheme.primaryColor,
@@ -149,7 +193,32 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     return Scaffold(
       appBar: ResponsiveAppBar(
         title: 'Ticket',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back to Main',
+          onPressed: _goBackToMain,
+        ),
         actions: [
+          // Mini menu for new or ongoing order
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Order Actions',
+            onSelected: (value) {
+              if (value == 'new') {
+                Navigator.pushNamed(
+                  context,
+                  '/order',
+                  arguments: {'isNewOrder': true},
+                );
+              } else if (value == 'ongoing') {
+                _showOngoingOrdersMenu();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'new', child: Text('New Order')),
+              const PopupMenuItem(value: 'ongoing', child: Text('Ongoing Order')),
+            ],
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -209,7 +278,32 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     return Scaffold(
       appBar: ResponsiveAppBar(
         title: 'Ticket',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back to Main',
+          onPressed: _goBackToMain,
+        ),
         actions: [
+          // Mini menu for new or ongoing order
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Order Actions',
+            onSelected: (value) {
+              if (value == 'new') {
+                Navigator.pushNamed(
+                  context,
+                  '/order',
+                  arguments: {'isNewOrder': true},
+                );
+              } else if (value == 'ongoing') {
+                _showOngoingOrdersMenu();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'new', child: Text('New Order')),
+              const PopupMenuItem(value: 'ongoing', child: Text('Ongoing Order')),
+            ],
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -601,10 +695,26 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 minHeight: 32,
               ),
             ),
+           IconButton(
+             onPressed: () => _removeItem(item),
+             icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+             tooltip: 'Remove item',
+             constraints: const BoxConstraints(
+               minWidth: 32,
+               minHeight: 32,
+             ),
+           ),
           ],
         ),
       ),
     );
+  }
+
+  // Remove an item from the cart entirely
+  void _removeItem(OrderItem item) {
+    setState(() {
+      _cartItems.remove(item);
+    });
   }
 
   void _createTicket() {
@@ -613,7 +723,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     });
   }
 
-  void _showAddItemOptions(Map<String, dynamic> item) {
+  void _showAddItemOptions(Map<String, dynamic> item, {OrderItem? existingItem}) {
     final List<Map<String, dynamic>> addOns = (item['addOns'] as List<dynamic>? ?? [])
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
@@ -623,8 +733,16 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       return;
     }
 
+    // Prepare selection and comment for editing
     final Map<Map<String, dynamic>, int> selected = {};
-    final commentCtrl = TextEditingController();
+    final commentCtrl = TextEditingController(text: existingItem?.comment ?? '');
+    // Pre-populate existing add-ons if editing
+    if (existingItem != null && existingItem.addOns != null) {
+      for (var add in existingItem.addOns!) {
+        final def = addOns.firstWhere((a) => a['id'] == add['id']);
+        selected[def] = add['quantity'] as int;
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -695,11 +813,17 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                       style: AppTheme.primaryButtonStyle,
                       onPressed: () {
                         Navigator.pop(context);
-                        final processedAddOns = selected.entries.map((e){
-                          final m = Map<String,dynamic>.from(e.key);
-                          m['quantity']=e.value;
+                        final processedAddOns = selected.entries.map((e) {
+                          final m = Map<String, dynamic>.from(e.key);
+                          m['quantity'] = e.value;
                           return m;
                         }).toList();
+                        // Remove old item when editing
+                        if (existingItem != null) {
+                          setState(() {
+                            _cartItems.removeWhere((ci) => ci.id == existingItem.id);
+                          });
+                        }
                         _addItemToCart(item, selectedAddOns: processedAddOns, comment: commentCtrl.text.trim());
                       },
                       child: const Text('Add to Cart'),
@@ -797,4 +921,191 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     // Navigate to the main settings screen via the central router
     Navigator.pushNamed(context, '/settings');
   }
-} 
+
+  // Add method to show ongoing orders
+  void _showOngoingOrdersMenu() {
+    final orders = ref.read(ordersProvider).where((order) {
+      final status = (order['status'] as String).toLowerCase();
+      return status == 'pending' || status == 'in progress';
+    }).toList();
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Select Ongoing Order', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: orders.length,
+                itemBuilder: (context, index) {
+                  final order = orders[index];
+                  return ListTile(
+                    title: Text(order['id'] as String),
+                    subtitle: Text(order['status'] as String),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(
+                        context,
+                        '/order',
+                        arguments: {
+                          'orderId': order['id'],
+                          'isNewOrder': false,
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  // Delete the entire order/ticket
+  void _deleteTicket() async {
+    if (!widget.isNewOrder && widget.orderId != null) {
+      await MockService.deleteOrder(widget.orderId!);
+      ref.read(ordersProvider.notifier).state = MockService.getOrders();
+      Navigator.pushNamedAndRemoveUntil(context, '/orders', (route) => false);
+    } else {
+      _resetOrder();
+    }
+  }
+
+  // Show cart items in a bottom sheet for mobile
+  void _showCartSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Cart', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                // Use StatefulBuilder for dynamic updates
+                StatefulBuilder(
+                  builder: (context, setModalState) {
+                    return Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _cartItems.length,
+                        itemBuilder: (context, index) {
+                          final item = _cartItems[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                                child: const Icon(Icons.shopping_cart, color: AppTheme.primaryColor),
+                              ),
+                              title: Text(item.name),
+                              subtitle: Text('\$${item.price.toStringAsFixed(2)} each'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      setModalState(() {
+                                        if (item.quantity > 1) {
+                                          _cartItems[index] = item.copyWith(quantity: item.quantity - 1);
+                                        }
+                                      });
+                                      setState(() {});
+                                    },
+                                    icon: const Icon(Icons.remove),
+                                  ),
+                                  Text('${item.quantity}'),
+                                  IconButton(
+                                    onPressed: () {
+                                      setModalState(() {
+                                        _cartItems[index] = item.copyWith(quantity: item.quantity + 1);
+                                      });
+                                      setState(() {});
+                                    },
+                                    icon: const Icon(Icons.add),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setModalState(() {
+                                        _cartItems.removeAt(index);
+                                      });
+                                      setState(() {});
+                                    },
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      // Remove and open edit modal
+                                      setModalState(() {
+                                        _cartItems.removeAt(index);
+                                      });
+                                      setState(() {});
+                                      Navigator.pop(context);
+                                      _editCartItem(item);
+                                    },
+                                    icon: const Icon(Icons.edit, color: AppTheme.primaryColor),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _proceedToOrderDetails();
+                      },
+                      style: AppTheme.primaryButtonStyle,
+                      child: const Text('Proceed to Checkout'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  // Edit an existing cart item by reopening add-ons sheet
+  void _editCartItem(OrderItem item) {
+    final baseItem = ref.read(availableItemsProvider).firstWhere((prod) => prod['name'] == item.name);
+    _showAddItemOptions(baseItem, existingItem: item);
+  }
+
+  // Navigate back to the main screen keeping current ticket intact if possible
+  void _goBackToMain() {
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/main',
+      (route) => false,
+    );
+  }
+}

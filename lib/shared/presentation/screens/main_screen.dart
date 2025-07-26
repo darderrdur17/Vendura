@@ -7,6 +7,7 @@ import 'package:vendura/features/receipts/presentation/screens/receipts_screen.d
 import 'package:vendura/features/refunds/presentation/screens/refunds_screen.dart';
 import 'package:vendura/features/reports/presentation/screens/reports_screen.dart';
 import 'package:vendura/features/settings/presentation/screens/settings_screen.dart';
+import 'package:vendura/core/services/mock_service.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -80,42 +81,102 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
       ),
       floatingActionButton: _currentIndex == 1
-          ? Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryColor,
-                    AppTheme.secondaryColor,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton.extended(
-                onPressed: () {
+          ? FloatingActionButton(
+              onPressed: _showOrderOptions,
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.add, size: 24),
+              heroTag: 'main_fab',
+            )
+          : null,
+    );
+  }
+
+  // Show bottom sheet with New Order and Ongoing Order options
+  void _showOrderOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.add),
+                title: const Text('New Order'),
+                onTap: () {
+                  Navigator.pop(context);
                   Navigator.pushNamed(
                     context,
                     '/order',
                     arguments: {'isNewOrder': true},
                   );
                 },
-                icon: const Icon(Icons.add, size: 24),
-                label: const Text('New Order', style: TextStyle(fontWeight: FontWeight.w600)),
-                backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                heroTag: 'main_fab',
               ),
-            )
-          : null,
+              ListTile(
+                leading: const Icon(Icons.playlist_play),
+                title: const Text('Ongoing Order'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showOngoingOrdersList();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Show list of ongoing orders (pending or in progress)
+  void _showOngoingOrdersList() {
+    final orders = ref.read(ordersProvider).where((order) {
+      final status = (order['status'] as String).toLowerCase();
+      return status == 'pending' || status == 'in progress';
+    }).toList();
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Select Ongoing Order', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: orders.length,
+                itemBuilder: (context, index) {
+                  final order = orders[index];
+                  return ListTile(
+                    title: Text(order['id'] as String),
+                    subtitle: Text(order['status'] as String),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(
+                        context,
+                        '/order',
+                        arguments: {
+                          'orderId': order['id'],
+                          'isNewOrder': false,
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 } 

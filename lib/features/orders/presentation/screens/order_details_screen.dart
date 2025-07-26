@@ -72,10 +72,6 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               
               // Discount Section
               _buildDiscountSection(),
-              const SizedBox(height: 24),
-              
-              // Order Summary
-              _buildOrderSummary(),
               const SizedBox(height: 32),
               
               // Proceed to Payment Button
@@ -193,7 +189,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Discounts',
+              'Discount',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -201,89 +197,35 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ..._discountOptions.map((discount) => _buildDiscountOption(discount)),
-            const SizedBox(height: 12),
+            DropdownButton<String>(
+              isExpanded: true,
+              value: _selectedDiscount,
+              hint: const Text('Select Discount'),
+              items: _discountOptions.map((discount) {
+                return DropdownMenuItem<String>(
+                  value: discount['name'] as String,
+                  child: Text(
+                    '${discount['name']} -  ${discount['percentage'].toStringAsFixed(0)}%',
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedDiscount = value;
+                  final selected = _discountOptions.firstWhere((d) => d['name'] == value);
+                  _discountPercentage = selected['percentage'] as double;
+                });
+              },
+            ),
             if (_selectedDiscount != null) ...[
-              const Divider(),
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Selected Discount:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.successGreen,
-                    ),
-                  ),
-                  Text(
-                    '${_discountPercentage.toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppTheme.successGreen,
-                    ),
-                  ),
-                ],
+              Text(
+                _discountOptions.firstWhere((d) => d['name'] == _selectedDiscount!)['description'] as String,
+                style: TextStyle(color: Colors.grey[700]),
               ),
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDiscountOption(Map<String, dynamic> discount) {
-    final isSelected = _selectedDiscount == discount['name'];
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: isSelected ? AppTheme.successGreen.withOpacity(0.1) : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: isSelected ? AppTheme.successGreen : Colors.grey[300]!,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: ListTile(
-        leading: Icon(
-          isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: isSelected ? AppTheme.successGreen : Colors.grey[600],
-        ),
-        title: Text(
-          discount['name'],
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: isSelected ? AppTheme.successGreen : Colors.black87,
-          ),
-        ),
-        subtitle: Text(
-          discount['description'],
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-        trailing: Text(
-          '${discount['percentage'].toStringAsFixed(0)}%',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: isSelected ? AppTheme.successGreen : AppTheme.primaryColor,
-          ),
-        ),
-        onTap: () {
-          setState(() {
-            if (isSelected) {
-              _selectedDiscount = null;
-              _discountPercentage = 0.0;
-            } else {
-              _selectedDiscount = discount['name'];
-              _discountPercentage = discount['percentage'];
-            }
-          });
-        },
       ),
     );
   }

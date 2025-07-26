@@ -147,9 +147,66 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ],
               ),
             ),
-            
             const SizedBox(height: 24),
-            
+            // Order Summary
+            if (_order != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Order Summary',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ..._order!.items.map((item) {
+                          final lineTotal = item.price * item.quantity;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('${item.quantity} x ${item.name}', style: const TextStyle(fontSize: 14)),
+                                Text('\$${lineTotal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 14)),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        if (_discountPercentage > 0) ...[
+                          const Divider(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Discount (${_discountPercentage.toStringAsFixed(0)}%)', style: TextStyle(color: AppTheme.successGreen)),
+                              Text('-\$${(_order!.items.fold(0.0, (s, i) => s + i.price * i.quantity) * (_discountPercentage / 100)).toStringAsFixed(2)}', style: TextStyle(color: AppTheme.successGreen, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                        const Divider(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                            Text('\$${_totalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
             // Payment Methods
             Expanded(
               child: Padding(
@@ -190,37 +247,80 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ),
             ),
             
-            // Tip disabled – no input
             // Cash Input (if payment method is Cash)
             if (_selectedPaymentMethod == 'Cash')
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Row(
-                  children: [
-                    const Text('Cash Received', style: TextStyle(fontSize: 16)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _cashController,
-                        keyboardType: TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          hintText: '0.00',
-                          border: OutlineInputBorder(),
-                          prefixText: '  ',
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Manual input row
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Text('Cash Received', style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _cashController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              hintText: '0.00',
+                              border: OutlineInputBorder(),
+                              prefixText: '  ',
+                            ),
+                            onChanged: (v) {
+                              setState(() {
+                                _cashReceived = double.tryParse(v) ?? 0.0;
+                                final totalWithTip = _totalAmount + _tip;
+                                _change = _cashReceived > totalWithTip ? _cashReceived - totalWithTip : 0.0;
+                              });
+                            },
+                          ),
                         ),
-                        onChanged: (v) {
-                          setState(() {
-                            _cashReceived = double.tryParse(v) ?? 0.0;
-                            final totalWithTip = _totalAmount + _tip;
-                            _change = _cashReceived > totalWithTip ? _cashReceived - totalWithTip : 0.0;
-                          });
-                        },
-                      ),
+                        const SizedBox(width: 12),
+                        Text('Change:  ${_change.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Text('Change:  ${_change.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ],
-                ),
+                  ),
+                  // Quick select buttons
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [2, 5, 10, 20, 50, 100, 'Other'].map((option) {
+                        return ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: option is int ? AppTheme.primaryColor : Colors.grey[300],
+                            foregroundColor: option is int ? Colors.white : Colors.black,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          onPressed: () {
+                            if (option is int) {
+                              final amt = option.toDouble();
+                              _cashController.text = amt.toStringAsFixed(2);
+                              setState(() {
+                                _cashReceived = amt;
+                                final totalWithTip = _totalAmount + _tip;
+                                _change = _cashReceived > totalWithTip ? _cashReceived - totalWithTip : 0.0;
+                              });
+                            } else {
+                              // Clear for manual entry; maintain focus for numpad
+                              _cashController.clear();
+                              setState(() {
+                                _cashReceived = 0.0;
+                                _change = 0.0;
+                              });
+                              // Keep keyboard open for manual input
+                            }
+                          },
+                          child: Text(
+                            option is int ? '\$${option}' : 'Other',
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
               ),
             
             // Checkout Button

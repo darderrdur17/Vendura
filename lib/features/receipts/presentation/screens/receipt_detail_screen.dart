@@ -74,29 +74,9 @@ class _ReceiptDetailScreenState extends ConsumerState<ReceiptDetailScreen> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            onPressed: _previewReceipt,
-            icon: const Icon(Icons.preview),
-            tooltip: 'Preview Receipt',
-          ),
-          IconButton(
-            onPressed: _printReceipt,
-            icon: const Icon(Icons.print),
-            tooltip: 'Print Receipt',
-          ),
-          IconButton(
             onPressed: _emailReceipt,
             icon: const Icon(Icons.email),
             tooltip: 'Email Receipt',
-          ),
-          IconButton(
-            onPressed: _shareReceipt,
-            icon: const Icon(Icons.share),
-            tooltip: 'Share Receipt',
-          ),
-          IconButton(
-            onPressed: _createRefund,
-            icon: const Icon(Icons.money_off),
-            tooltip: 'Create Refund',
           ),
         ],
       ),
@@ -157,36 +137,14 @@ class _ReceiptDetailScreenState extends ConsumerState<ReceiptDetailScreen> {
           ReceiptTemplate(receipt: _receipt!),
           const SizedBox(height: 24),
           
-          // Action Buttons
+          // Email Button Only
           Row(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _printReceipt,
-                  icon: const Icon(Icons.print),
-                  label: const Text('Print'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _emailReceipt,
                   icon: const Icon(Icons.email),
                   label: const Text('Email'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _shareReceipt,
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),

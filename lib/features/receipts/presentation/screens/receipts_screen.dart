@@ -127,14 +127,6 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createNewReceipt,
-        icon: const Icon(Icons.add),
-        label: const Text('New Receipt'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        heroTag: 'receipts_fab',
-      ),
     );
   }
 
