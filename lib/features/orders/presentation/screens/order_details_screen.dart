@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vendura/core/theme/app_theme.dart';
 import 'package:vendura/data/models/order.dart';
+import 'package:vendura/core/providers/orders_provider.dart';
 
 class OrderDetailsScreen extends ConsumerStatefulWidget {
   const OrderDetailsScreen({super.key});
@@ -351,10 +352,23 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     );
   }
 
-  void _proceedToPayment() {
-    // Create order with all details
+  void _proceedToPayment() async {
+    // Create order data
+    final orderData = {
+      'items': _cartItems.map((item) => item.toJson()).toList(),
+      'totalAmount': _finalTotal,
+      'status': 'pending',
+      'orderType': _orderType,
+      'discountPercentage': _discountPercentage,
+      'discountName': _selectedDiscount,
+    };
+
+    // Add order to the system
+    final orderId = await ref.read(ordersProvider.notifier).addOrder(orderData);
+
+    // Create order object for payment screen
     final order = Order(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: orderId,
       items: _cartItems,
       totalAmount: _finalTotal,
       status: OrderStatus.pending,

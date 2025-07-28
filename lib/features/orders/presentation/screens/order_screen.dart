@@ -6,6 +6,7 @@ import 'package:vendura/core/services/platform_service.dart';
 import 'package:vendura/core/providers/items_provider.dart';
 import 'package:vendura/core/providers/settings_provider.dart';
 import 'package:vendura/core/providers/order_session_provider.dart';
+import 'package:vendura/core/providers/orders_provider.dart';
 import 'package:vendura/data/models/order.dart';
 import 'package:vendura/shared/presentation/widgets/responsive_layout.dart';
 import 'package:uuid/uuid.dart';
@@ -64,7 +65,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     // If editing an existing order, load its data
     if (!widget.isNewOrder && widget.orderId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final orderData = MockService.getOrder(widget.orderId!);
+        final orderData = ref.read(ordersProvider.notifier).getOrder(widget.orderId!);
         if (orderData != null) {
           final items = (orderData['items'] as List<dynamic>?)
               ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -924,10 +925,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 
   // Add method to show ongoing orders
   void _showOngoingOrdersMenu() {
-    final orders = ref.read(ordersProvider).where((order) {
-      final status = (order['status'] as String).toLowerCase();
-      return status == 'pending' || status == 'in progress';
-    }).toList();
+    // Use ref.watch to always get the latest state
+    final orders = ref.watch(ongoingOrdersProvider);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -972,11 +971,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
   // Delete the entire order/ticket
   void _deleteTicket() async {
-    if (!widget.isNewOrder && widget.orderId != null) {
-      await MockService.deleteOrder(widget.orderId!);
-      ref.read(ordersProvider.notifier).state = MockService.getOrders();
-      Navigator.pushNamedAndRemoveUntil(context, '/orders', (route) => false);
+    print('Delete ticket called');
+    // Always try to cancel if there is an orderId
+    if (widget.orderId != null) {
+      print('Cancelling order: ${widget.orderId}');
+      await ref.read(ordersProvider.notifier).cancelOrder(widget.orderId!);
+      ref.read(orderSessionProvider.notifier).state++;
+      Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
     } else {
+      print('Resetting order (no orderId)');
       _resetOrder();
     }
   }

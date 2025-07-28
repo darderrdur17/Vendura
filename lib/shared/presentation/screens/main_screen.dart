@@ -8,6 +8,7 @@ import 'package:vendura/features/refunds/presentation/screens/refunds_screen.dar
 import 'package:vendura/features/reports/presentation/screens/reports_screen.dart';
 import 'package:vendura/features/settings/presentation/screens/settings_screen.dart';
 import 'package:vendura/core/services/mock_service.dart';
+import 'package:vendura/core/providers/orders_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -133,10 +134,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   // Show list of ongoing orders (pending or in progress)
   void _showOngoingOrdersList() {
-    final orders = ref.read(ordersProvider).where((order) {
-      final status = (order['status'] as String).toLowerCase();
-      return status == 'pending' || status == 'in progress';
-    }).toList();
+    final orders = ref.read(ongoingOrdersProvider);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(

@@ -487,88 +487,7 @@ class MockService {
   ];
 
   static final List<Map<String, dynamic>> _mockOrders = [
-    {
-      'id': 'ORD-20241215-0001',
-      'items': [
-        {
-          'id': 'item-1',
-          'name': 'Espresso',
-          'price': 3.50,
-          'quantity': 2,
-        },
-        {
-          'id': 'item-16',
-          'name': 'Croissant',
-          'price': 3.50,
-          'quantity': 1,
-        },
-      ],
-      'total': 10.50,
-      'status': 'completed',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-      'customerName': 'John Doe',
-      'notes': 'Extra hot',
-    },
-    {
-      'id': 'ORD-20241215-0002',
-      'items': [
-        {
-          'id': 'item-3',
-          'name': 'Cappuccino',
-          'price': 4.50,
-          'quantity': 1,
-        },
-        {
-          'id': 'item-21',
-          'name': 'Lavender Honey Latte',
-          'price': 6.50,
-          'quantity': 1,
-        },
-      ],
-      'total': 11.00,
-      'status': 'in progress',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
-      'customerName': 'Jane Smith',
-      'notes': 'For here',
-    },
-    {
-      'id': 'ORD-20241215-0003',
-      'items': [
-        {
-          'id': 'item-8',
-          'name': 'Pour Over',
-          'price': 4.00,
-          'quantity': 1,
-        },
-        {
-          'id': 'item-26',
-          'name': 'Avocado Toast',
-          'price': 8.50,
-          'quantity': 1,
-        },
-      ],
-      'total': 12.50,
-      'status': 'pending',
-      'createdAt': DateTime.now().subtract(const Duration(minutes: 30)).toIso8601String(),
-      'customerName': 'Mike Johnson',
-      'notes': 'To go',
-    },
-    {
-      'id': 'ORD-20241215-0004',
-      'items': [
-        {
-          'id': 'item-12',
-          'name': 'Earl Grey',
-          'price': 3.50,
-          'quantity': 1,
-        },
-      ],
-      'total': 3.50,
-      'status': 'cancelled',
-      'createdAt': DateTime.now().subtract(const Duration(minutes: 15)).toIso8601String(),
-      'customerName': 'Sarah Wilson',
-      'notes': 'Customer cancelled',
-    },
+    // Start with an empty list. Only new orders created in the app will appear.
   ];
   static final List<Map<String, dynamic>> _mockReceipts = [
     // Generate some sample receipts
@@ -1029,10 +948,6 @@ class MockService {
 // Riverpod providers for mock service
 final currentUserProvider = StateProvider<Map<String, dynamic>?>((ref) {
   return MockService.currentUser;
-});
-
-final ordersProvider = StateProvider<List<Map<String, dynamic>>>((ref) {
-  return MockService.getOrders();
 });
 
 final receiptsProvider = StateProvider<List<Map<String, dynamic>>>((ref) {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vendura/core/theme/app_theme.dart';
 import 'package:vendura/core/services/mock_service.dart';
 import 'package:vendura/data/models/order.dart';
+import 'package:vendura/core/providers/orders_provider.dart';
 
 class OrdersListScreen extends ConsumerStatefulWidget {
   const OrdersListScreen({super.key});

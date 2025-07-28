@@ -6,6 +6,7 @@ import 'package:vendura/core/services/mock_service.dart';
 import 'package:vendura/data/models/receipt.dart';
 import 'package:vendura/core/services/receipt_generator.dart';
 import 'package:vendura/core/providers/order_session_provider.dart';
+import 'package:vendura/core/providers/orders_provider.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key});
@@ -468,9 +469,19 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           change: _change,
         );
         
+        // Mark the order as completed and remove from ongoing orders
+        if (_order != null) {
+          print('Payment successful, completing order: ${_order!.id}');
+          await ref.read(ordersProvider.notifier).completeOrder(_order!.id);
+          print('Order completion finished');
+        } else {
+          print('No order found to complete');
+        }
+        
         // Update receipts provider
         if (mounted) {
           ref.read(receiptsProvider.notifier).state = MockService.getReceipts();
+          
           // Reset order session so OrderScreen clears
           ref.read(orderSessionProvider.notifier).state++;
         }
