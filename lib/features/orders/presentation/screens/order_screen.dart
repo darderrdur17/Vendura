@@ -103,6 +103,9 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   @override
   void initState() {
     super.initState();
+    print('OrderScreen constructor passed orderId: ${widget.orderId}, isNewOrder: ${widget.isNewOrder}');
+    print('OrderScreen initState - orderId: ${widget.orderId}, isNewOrder: ${widget.isNewOrder}');
+    
     // Listen for session reset
     _sessionSub = ref.listenManual<int>(orderSessionProvider, (prev, next) {
       if (widget.isNewOrder) {
@@ -112,9 +115,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 
     // If editing an existing order, load its data
     if (!widget.isNewOrder && widget.orderId != null) {
+      print('Will load existing order data for: ${widget.orderId}');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadExistingOrderData();
       });
+    } else {
+      print('Not loading existing order data - isNewOrder: ${widget.isNewOrder}, orderId: ${widget.orderId}');
     }
   }
 

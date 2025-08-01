@@ -192,14 +192,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   }
                                 } else if (forUpdate) {
                                   Navigator.pop(context); // Close bottom sheet
-                                  setState(() => _currentIndex = 0); // Switch to Orders tab
-                                  Navigator.pushNamed(
+                                  print('Navigating to update order: ${order['id']}');
+                                  // Navigate directly to the order screen with arguments
+                                  Navigator.push(
                                     context,
-                                    '/order',
-                                    arguments: {
-                                      'orderId': order['id'],
-                                      'isNewOrder': false,
-                                    },
+                                    MaterialPageRoute(
+                                      builder: (context) => OrderScreen(
+                                        orderId: order['id'],
+                                        isNewOrder: false,
+                                      ),
+                                    ),
                                   );
                                 }
                               },

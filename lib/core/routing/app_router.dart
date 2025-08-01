@@ -66,6 +66,8 @@ class AppRouter {
       
       case '/order':
         final args = routeSettings.arguments as Map<String, dynamic>?;
+        print('AppRouter /order route - args: $args');
+        print('AppRouter orderId: ${args?['orderId']}, isNewOrder: ${args?['isNewOrder']}');
         return MaterialPageRoute(
           builder: (_) => OrderScreen(
             orderId: args?['orderId'],
