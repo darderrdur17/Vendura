@@ -129,55 +129,67 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     
     print('Loading existing order data for: ${widget.orderId}');
     
-    final orderData = ref.read(ordersProvider.notifier).getOrder(widget.orderId!);
-    if (orderData != null) {
-      print('Order data found: ${orderData.keys}');
-      
-      final items = (orderData['items'] as List<dynamic>?)
-          ?.map((e) {
-            final itemData = e as Map<String, dynamic>;
-            print('Loading item: ${itemData['name']} x${itemData['quantity']}');
+    try {
+      final orderData = ref.read(ordersProvider.notifier).getOrder(widget.orderId!);
+      if (orderData != null) {
+        print('Order data found: ${orderData.keys}');
+        print('Full order data: $orderData');
+        
+        final items = (orderData['items'] as List<dynamic>?)
+            ?.map((e) {
+              final itemData = e as Map<String, dynamic>;
+              print('Loading item: ${itemData['name']} x${itemData['quantity']}');
+              
+              // Ensure we have all required fields for OrderItem
+              return OrderItem(
+                id: itemData['id'] as String,
+                name: itemData['name'] as String,
+                price: (itemData['price'] as num).toDouble(),
+                quantity: itemData['quantity'] as int,
+                imageUrl: itemData['imageUrl'] as String?,
+                addOns: itemData['addOns'] != null 
+                    ? List<Map<String, dynamic>>.from(itemData['addOns'] as List)
+                    : null,
+                comment: itemData['comment'] as String?,
+              );
+            })
+            .toList();
             
-            // Ensure we have all required fields for OrderItem
-            return OrderItem(
-              id: itemData['id'] as String,
-              name: itemData['name'] as String,
-              price: (itemData['price'] as num).toDouble(),
-              quantity: itemData['quantity'] as int,
-              imageUrl: itemData['imageUrl'] as String?,
-              addOns: itemData['addOns'] != null 
-                  ? List<Map<String, dynamic>>.from(itemData['addOns'] as List)
-                  : null,
-              comment: itemData['comment'] as String?,
-            );
-          })
-          .toList();
-          
-      setState(() {
-        _cartItems.clear();
-        if (items != null) {
-          _cartItems.addAll(items);
-          print('Loaded ${_cartItems.length} items into cart');
+        setState(() {
+          _cartItems.clear();
+          if (items != null) {
+            _cartItems.addAll(items);
+            print('Loaded ${_cartItems.length} items into cart');
+          }
+          _isTicketCreated = true; // Always true when editing existing order
+        });
+        
+        // Show a message to indicate existing order items were loaded
+        if (mounted && _cartItems.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Loaded existing order with ${_cartItems.length} items'),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 2),
+            ),
+          );
         }
-        _isTicketCreated = true; // Always true when editing existing order
-      });
-      
-      // Show a message to indicate existing order items were loaded
-      if (mounted && _cartItems.isNotEmpty) {
+      } else {
+        print('No order data found for: ${widget.orderId}');
+        print('Available orders: ${ref.read(ordersProvider).map((o) => o['id']).toList()}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Loaded existing order with ${_cartItems.length} items'),
-            backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 2),
+          const SnackBar(
+            content: Text('Could not load existing order data'),
+            backgroundColor: Colors.orange,
           ),
         );
       }
-    } else {
-      print('No order data found for: ${widget.orderId}');
+    } catch (e) {
+      print('Error loading order data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not load existing order data'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: Text('Error loading order: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -1137,8 +1149,14 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        // Navigate back to main screen
-        Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+        // Navigate back to main screen and show orders tab
+        Navigator.pop(context);
+        // Navigate to main screen with orders tab selected
+        Navigator.pushReplacementNamed(
+          context, 
+          '/main',
+          arguments: {'initialTabIndex': 2}, // Orders tab
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -1384,11 +1402,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
         ),
       );
     } else {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/main',
-        (route) => false,
-      );
+      Navigator.popUntil(context, ModalRoute.withName('/main'));
     }
   }
 }

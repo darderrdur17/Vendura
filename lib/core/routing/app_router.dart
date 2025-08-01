@@ -52,8 +52,11 @@ class AppRouter {
         );
       
       case '/main':
+        final args = routeSettings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
-          builder: (_) => const MainScreen(),
+          builder: (_) => MainScreen(
+            initialTabIndex: args?['initialTabIndex'],
+          ),
         );
       
       case '/orders':

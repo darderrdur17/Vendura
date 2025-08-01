@@ -18,7 +18,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen> {
   List<String> get statusFilters => ['All', 'Pending', 'In Progress', 'Completed', 'Cancelled'];
 
   List<Map<String, dynamic>> get filteredOrders {
-    final orders = ref.read(ordersProvider);
+    final orders = ref.watch(ordersProvider);
     if (_selectedStatus == 'All') return orders;
     
     return orders.where((order) {

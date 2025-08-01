@@ -9,15 +9,23 @@ import 'package:vendura/shared/presentation/widgets/action_menu_overlay.dart';
 import 'package:vendura/core/providers/orders_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
-  const MainScreen({super.key});
+  final int? initialTabIndex;
+  
+  const MainScreen({super.key, this.initialTabIndex});
 
   @override
   ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
   bool _showActionMenu = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTabIndex ?? 0;
+  }
 
   // Pages for bottom-nav
   final List<Widget> _screens = const [
@@ -185,15 +193,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 } else if (forUpdate) {
                                   Navigator.pop(context); // Close bottom sheet
                                   setState(() => _currentIndex = 0); // Switch to Orders tab
-                                                        Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/order',
-                                    (route) => false,
-                        arguments: {
-                          'orderId': order['id'],
-                          'isNewOrder': false,
-                        },
-                      );
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/order',
+                                    arguments: {
+                                      'orderId': order['id'],
+                                      'isNewOrder': false,
+                                    },
+                                  );
                                 }
                               },
                               child: Padding(
