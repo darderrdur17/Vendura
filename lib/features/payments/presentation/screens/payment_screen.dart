@@ -471,19 +471,29 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         
         // Mark the order as completed and remove from ongoing orders
         if (_order != null) {
-          print('Payment successful, completing order: ${_order!.id}');
+          // Update order status to completed
+          final updatedOrder = _order!.copyWith(
+            status: OrderStatus.completed,
+            updatedAt: DateTime.now(),
+            paymentMethod: _selectedPaymentMethod,
+            amountPaid: amountPaid,
+            change: _change,
+          );
+          
+          await ref.read(ordersProvider.notifier).updateOrder(updatedOrder.id, updatedOrder.toJson());
+          
+          // Remove from ongoing orders
           await ref.read(ordersProvider.notifier).completeOrder(_order!.id);
-          print('Order completion finished');
-        } else {
-          print('No order found to complete');
+          
+          // Order has been completed and updated
         }
         
-        // Update receipts provider
+        // Update receipts provider and reset order session
         if (mounted) {
           ref.read(receiptsProvider.notifier).state = MockService.getReceipts();
-          
-          // Reset order session so OrderScreen clears
           ref.read(orderSessionProvider.notifier).state++;
+          
+          // Order session has been reset
         }
         
         // Show dialog and navigate to receipt

@@ -96,6 +96,9 @@ class Order {
   final String? orderType; // Dine-in or Takeaway
   final double? discountPercentage; // Discount percentage applied
   final String? discountName; // Name of the discount applied
+  final String? paymentMethod; // Payment method used
+  final double? amountPaid; // Amount paid by customer
+  final double? change; // Change given to customer
 
   const Order({
     required this.id,
@@ -107,6 +110,9 @@ class Order {
     this.orderType,
     this.discountPercentage,
     this.discountName,
+    this.paymentMethod,
+    this.amountPaid,
+    this.change,
   });
 
   Order copyWith({
@@ -119,6 +125,9 @@ class Order {
     String? orderType,
     double? discountPercentage,
     String? discountName,
+    String? paymentMethod,
+    double? amountPaid,
+    double? change,
   }) {
     return Order(
       id: id ?? this.id,
@@ -130,6 +139,9 @@ class Order {
       orderType: orderType ?? this.orderType,
       discountPercentage: discountPercentage ?? this.discountPercentage,
       discountName: discountName ?? this.discountName,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      amountPaid: amountPaid ?? this.amountPaid,
+      change: change ?? this.change,
     );
   }
 
@@ -144,6 +156,9 @@ class Order {
       'orderType': orderType,
       'discountPercentage': discountPercentage,
       'discountName': discountName,
+      'paymentMethod': paymentMethod,
+      'amountPaid': amountPaid,
+      'change': change,
     };
   }
 
@@ -163,6 +178,9 @@ class Order {
       orderType: json['orderType'] as String?,
       discountPercentage: json['discountPercentage'] as double?,
       discountName: json['discountName'] as String?,
+      paymentMethod: json['paymentMethod'] as String?,
+      amountPaid: json['amountPaid'] != null ? (json['amountPaid'] as num).toDouble() : null,
+      change: json['change'] != null ? (json['change'] as num).toDouble() : null,
     );
   }
 

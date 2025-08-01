@@ -9,6 +9,7 @@ import 'package:vendura/core/providers/order_session_provider.dart';
 import 'package:vendura/core/providers/orders_provider.dart';
 import 'package:vendura/data/models/order.dart';
 import 'package:vendura/shared/presentation/widgets/responsive_layout.dart';
+
 import 'package:uuid/uuid.dart';
 
 class OrderScreen extends ConsumerStatefulWidget {
@@ -30,6 +31,50 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   String _selectedCategory = 'All';
   String _searchQuery = '';
   bool _isTicketCreated = false;
+  
+  // Sample tickets for testing
+  final List<Map<String, dynamic>> _sampleTickets = [
+    {
+      'id': '1',
+      'items': [
+        {
+          'id': 'item1',
+          'name': 'Cappuccino',
+          'price': 5.99,
+          'quantity': 2,
+        },
+        {
+          'id': 'item2',
+          'name': 'Croissant',
+          'price': 3.99,
+          'quantity': 1,
+        },
+      ],
+      'totalAmount': 15.97,
+      'status': 'pending',
+      'orderType': 'Dine-in',
+    },
+    {
+      'id': '2',
+      'items': [
+        {
+          'id': 'item3',
+          'name': 'Latte',
+          'price': 4.99,
+          'quantity': 1,
+        },
+        {
+          'id': 'item4',
+          'name': 'Chocolate Muffin',
+          'price': 3.49,
+          'quantity': 2,
+        },
+      ],
+      'totalAmount': 11.97,
+      'status': 'pending',
+      'orderType': 'Takeaway',
+    },
+  ];
   
   List<String> get categories {
     final items = ref.watch(availableItemsProvider);
@@ -60,22 +105,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     super.initState();
     // Listen for session reset
     _sessionSub = ref.listenManual<int>(orderSessionProvider, (prev, next) {
-      _resetOrder();
+      if (widget.isNewOrder) {
+        _resetOrder(); // Only reset if it's a new order
+      }
     });
+
     // If editing an existing order, load its data
     if (!widget.isNewOrder && widget.orderId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final orderData = ref.read(ordersProvider.notifier).getOrder(widget.orderId!);
-        if (orderData != null) {
-          final items = (orderData['items'] as List<dynamic>?)
-              ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
-              .toList();
-          setState(() {
-            _cartItems.clear();
-            if (items != null) _cartItems.addAll(items);
-            _isTicketCreated = _cartItems.isNotEmpty;
-          });
-        }
+        _loadExistingOrderData();
       });
     }
   }
@@ -86,6 +124,65 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     super.dispose();
   }
 
+  void _loadExistingOrderData() {
+    if (widget.orderId == null) return;
+    
+    print('Loading existing order data for: ${widget.orderId}');
+    
+    final orderData = ref.read(ordersProvider.notifier).getOrder(widget.orderId!);
+    if (orderData != null) {
+      print('Order data found: ${orderData.keys}');
+      
+      final items = (orderData['items'] as List<dynamic>?)
+          ?.map((e) {
+            final itemData = e as Map<String, dynamic>;
+            print('Loading item: ${itemData['name']} x${itemData['quantity']}');
+            
+            // Ensure we have all required fields for OrderItem
+            return OrderItem(
+              id: itemData['id'] as String,
+              name: itemData['name'] as String,
+              price: (itemData['price'] as num).toDouble(),
+              quantity: itemData['quantity'] as int,
+              imageUrl: itemData['imageUrl'] as String?,
+              addOns: itemData['addOns'] != null 
+                  ? List<Map<String, dynamic>>.from(itemData['addOns'] as List)
+                  : null,
+              comment: itemData['comment'] as String?,
+            );
+          })
+          .toList();
+          
+      setState(() {
+        _cartItems.clear();
+        if (items != null) {
+          _cartItems.addAll(items);
+          print('Loaded ${_cartItems.length} items into cart');
+        }
+        _isTicketCreated = true; // Always true when editing existing order
+      });
+      
+      // Show a message to indicate existing order items were loaded
+      if (mounted && _cartItems.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Loaded existing order with ${_cartItems.length} items'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      print('No order data found for: ${widget.orderId}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not load existing order data'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
   void _resetOrder() {
     setState(() {
       _cartItems.clear();
@@ -93,6 +190,83 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       _selectedCategory = 'All';
       _searchQuery = '';
     });
+  }
+
+  void _handleNewTicket() {
+    setState(() {
+      _cartItems.clear();
+      _isTicketCreated = false;
+    });
+    ref.read(orderSessionProvider.notifier).state++;
+  }
+
+  void _handleUpdateTicket() async {
+    if (!_isTicketCreated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No active ticket to update'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to order details for editing
+    final result = await Navigator.pushNamed(
+      context,
+      '/order-details',
+      arguments: {
+        'cartItems': _cartItems,
+        'totalAmount': totalAmount,
+        'isEditing': true,
+      },
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        // Update the order with the edited details
+        final updatedOrder = result as Map<String, dynamic>;
+        _cartItems.clear();
+        _cartItems.addAll(List<OrderItem>.from(updatedOrder['items']));
+      });
+    }
+  }
+
+  void _handleDeleteTicket() {
+    if (!_isTicketCreated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No active ticket to delete'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Ticket'),
+        content: const Text('Are you sure you want to delete this ticket?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _cartItems.clear();
+                _isTicketCreated = false;
+              });
+              ref.read(orderSessionProvider.notifier).state++;
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -107,36 +281,26 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   Widget _buildMobileLayout() {
     return Scaffold(
       appBar: ResponsiveAppBar(
-        title: 'Ticket',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to Main',
-          onPressed: _goBackToMain,
-        ),
+        title: widget.isNewOrder ? 'New Ticket' : 'Update Ticket',
+        backgroundColor: widget.isNewOrder ? null : Colors.blue.shade50,
         actions: [
-          // Mini menu for new or ongoing order
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'Order Actions',
-            onSelected: (value) {
-              if (value == 'new') {
-                Navigator.pushNamed(
-                  context,
-                  '/order',
-                  arguments: {'isNewOrder': true},
-                );
-              } else if (value == 'ongoing') {
-                _showOngoingOrdersMenu();
-              } else if (value == 'delete') {
-                _deleteTicket();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'new', child: Text('New Order')),
-              const PopupMenuItem(value: 'ongoing', child: Text('Ongoing Order')),
-              const PopupMenuItem(value: 'delete', child: Text('Delete Ticket')),
-            ],
-          ),
+          if (!widget.isNewOrder && widget.orderId != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'ID: ${widget.orderId}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
+            ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -159,29 +323,70 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           ),
           IconButton(
             onPressed: _showSettings,
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.settings),
             tooltip: 'Settings',
           ),
         ],
       ),
       body: Column(
         children: [
+          // Update Mode Banner
+          if (!widget.isNewOrder && _cartItems.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                border: Border(
+                  bottom: BorderSide(color: Colors.blue.shade200),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_note, color: Colors.blue.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Updating Order: ${_cartItems.length} existing items loaded',
+                      style: TextStyle(
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade700,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '\$${totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // Category and Search Bar
           _buildCategoryAndSearchBar(),
           
           // Product Grid
           Expanded(
-            child: _isTicketCreated
-                ? _buildMobileProductList()
-                : _buildCreateTicketPrompt(),
+            child: _buildMobileProductList(),
           ),
         ],
       ),
       floatingActionButton: _cartItems.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: _showCartSheet,
-              icon: const Icon(Icons.shopping_cart),
-              label: Text('Cart (${_cartItems.length})  |  \$${totalAmount.toStringAsFixed(2)}'),
+              icon: Icon(widget.isNewOrder ? Icons.shopping_cart : Icons.edit),
+              label: Text('${widget.isNewOrder ? "Cart" : "Update"} (${_cartItems.length})  |  \$${totalAmount.toStringAsFixed(2)}'),
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               heroTag: 'order_fab',
@@ -193,33 +398,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   Widget _buildTabletLayout() {
     return Scaffold(
       appBar: ResponsiveAppBar(
-        title: 'Ticket',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to Main',
-          onPressed: _goBackToMain,
-        ),
+        title: widget.isNewOrder ? 'New Ticket' : 'Update Ticket',
+
         actions: [
-          // Mini menu for new or ongoing order
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'Order Actions',
-            onSelected: (value) {
-              if (value == 'new') {
-                Navigator.pushNamed(
-                  context,
-                  '/order',
-                  arguments: {'isNewOrder': true},
-                );
-              } else if (value == 'ongoing') {
-                _showOngoingOrdersMenu();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'new', child: Text('New Order')),
-              const PopupMenuItem(value: 'ongoing', child: Text('Ongoing Order')),
-            ],
-          ),
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -242,7 +424,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           ),
           IconButton(
             onPressed: _showSettings,
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.settings),
             tooltip: 'Settings',
           ),
         ],
@@ -256,9 +438,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               children: [
                 _buildCategoryAndSearchBar(),
                 Expanded(
-                  child: _isTicketCreated
-                      ? _buildTabletProductList()
-                      : _buildCreateTicketPrompt(),
+                  child: _buildTabletProductList(),
                 ),
               ],
             ),
@@ -278,33 +458,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   Widget _buildDesktopLayout() {
     return Scaffold(
       appBar: ResponsiveAppBar(
-        title: 'Ticket',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to Main',
-          onPressed: _goBackToMain,
-        ),
+        title: widget.isNewOrder ? 'New Ticket' : 'Update Ticket',
+
         actions: [
-          // Mini menu for new or ongoing order
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'Order Actions',
-            onSelected: (value) {
-              if (value == 'new') {
-                Navigator.pushNamed(
-                  context,
-                  '/order',
-                  arguments: {'isNewOrder': true},
-                );
-              } else if (value == 'ongoing') {
-                _showOngoingOrdersMenu();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'new', child: Text('New Order')),
-              const PopupMenuItem(value: 'ongoing', child: Text('Ongoing Order')),
-            ],
-          ),
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -327,7 +484,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           ),
           IconButton(
             onPressed: _showSettings,
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.settings),
             tooltip: 'Settings',
           ),
         ],
@@ -341,9 +498,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               children: [
                 _buildCategoryAndSearchBar(),
                 Expanded(
-                  child: _isTicketCreated
-                      ? _buildDesktopProductList()
-                      : _buildCreateTicketPrompt(),
+                  child: _buildDesktopProductList(),
                 ),
               ],
             ),
@@ -530,27 +685,32 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.shopping_cart, color: Colors.white),
-                const SizedBox(width: AppTheme.spacingS),
-                Text(
-                  'Cart (${_cartItems.length})',
-                  style: AppTheme.titleMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '\$${totalAmount.toStringAsFixed(2)}',
-                  style: AppTheme.titleMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+                         child: Row(
+               children: [
+                 Icon(
+                   widget.isNewOrder ? Icons.shopping_cart : Icons.edit_note,
+                   color: Colors.white,
+                 ),
+                 const SizedBox(width: AppTheme.spacingS),
+                 Text(
+                   widget.isNewOrder 
+                       ? 'Cart (${_cartItems.length})'
+                       : 'Update Order (${_cartItems.length})',
+                   style: AppTheme.titleMedium.copyWith(
+                     color: Colors.white,
+                     fontWeight: FontWeight.bold,
+                   ),
+                 ),
+                 const Spacer(),
+                 Text(
+                   '\$${totalAmount.toStringAsFixed(2)}',
+                   style: AppTheme.titleMedium.copyWith(
+                     color: Colors.white,
+                     fontWeight: FontWeight.bold,
+                   ),
+                 ),
+               ],
+             ),
           ),
           
           // Cart Items
@@ -572,8 +732,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _proceedToOrderDetails,
-                icon: const Icon(Icons.payment),
-                label: const Text('Proceed to Payment'),
+                icon: Icon(widget.isNewOrder ? Icons.payment : Icons.save),
+                label: Text(widget.isNewOrder ? 'Proceed to Payment' : 'Save Changes'),
                 style: AppTheme.primaryButtonStyle,
               ),
             ),
@@ -595,7 +755,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Item Image Placeholder
+            // Item Image
             Expanded(
               flex: 3,
               child: Container(
@@ -607,10 +767,44 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                     topRight: Radius.circular(AppTheme.radiusMedium),
                   ),
                 ),
-                child: Icon(
-                  Icons.coffee,
-                  size: 40,
-                  color: AppTheme.primaryColor,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(AppTheme.radiusMedium),
+                    topRight: Radius.circular(AppTheme.radiusMedium),
+                  ),
+                  child: item['imageUrl'] != null
+                      ? Image.network(
+                          item['imageUrl'],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: AppTheme.primaryColor.withOpacity(0.1),
+                              child: Icon(
+                                Icons.coffee,
+                                size: 40,
+                                color: AppTheme.primaryColor,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: AppTheme.primaryColor.withOpacity(0.1),
+                              child: Icon(
+                                Icons.coffee,
+                                size: 40,
+                                color: AppTheme.primaryColor,
+                              ),
+                            );
+                          },
+                        )
+                      : Icon(
+                          Icons.coffee,
+                          size: 40,
+                          color: AppTheme.primaryColor,
+                        ),
                 ),
               ),
             ),
@@ -655,11 +849,16 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-          child: Icon(
-            Icons.coffee,
-            color: AppTheme.primaryColor,
-            size: 20,
-          ),
+          backgroundImage: item.imageUrl != null 
+              ? NetworkImage(item.imageUrl!) 
+              : null,
+          child: item.imageUrl == null 
+              ? Icon(
+                  Icons.coffee,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ) 
+              : null,
         ),
         title: Text(
           item.name,
@@ -840,9 +1039,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   void _addItemToCart(Map<String, dynamic> item, {List<Map<String, dynamic>> selectedAddOns = const [], String? comment}) {
-    if (!_isTicketCreated) {
-      _createTicket();
-    }
+    _isTicketCreated = true;
 
     final existingItemIndex = _cartItems.indexWhere(
       (cartItem) => cartItem.name == item['name'] && (cartItem.addOns?.isEmpty ?? true) == selectedAddOns.isEmpty,
@@ -868,6 +1065,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           name: item['name'],
           price: basePrice + addOnsPrice,
           quantity: 1,
+          imageUrl: item['imageUrl'] as String?,
           addOns: selectedAddOns.isEmpty ? null : selectedAddOns,
           comment: (comment?.isEmpty ?? true) ? null : comment,
         ));
@@ -902,15 +1100,56 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   void _proceedToOrderDetails() {
-    // Navigate to order details screen
-    Navigator.pushNamed(
-      context,
-      '/order-details',
-      arguments: {
-        'cartItems': _cartItems,
-        'totalAmount': totalAmount,
-      },
-    );
+    // If we're editing an existing order, save the changes first
+    if (!widget.isNewOrder && widget.orderId != null) {
+      _saveOrderChanges();
+    } else {
+      // Navigate to order details screen for new orders
+      Navigator.pushNamed(
+        context,
+        '/order-details',
+        arguments: {
+          'cartItems': _cartItems,
+          'totalAmount': totalAmount,
+        },
+      );
+    }
+  }
+
+  void _saveOrderChanges() async {
+    if (widget.orderId == null) return;
+
+    // Update the existing order with new items
+    final updatedOrderData = {
+      'items': _cartItems.map((item) => item.toJson()).toList(),
+      'totalAmount': totalAmount,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    try {
+      await ref.read(ordersProvider.notifier).updateOrder(widget.orderId!, updatedOrderData);
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Navigate back to main screen
+        Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update order: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showUserProfile() {
@@ -941,27 +1180,32 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 padding: EdgeInsets.all(16),
                 child: Text('Select Ongoing Order', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
-              ListView.builder(
-                shrinkWrap: true,
-                itemCount: orders.length,
-                itemBuilder: (context, index) {
-                  final order = orders[index];
-                  return ListTile(
-                    title: Text(order['id'] as String),
-                    subtitle: Text(order['status'] as String),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(
-                        context,
-                        '/order',
-                        arguments: {
-                          'orderId': order['id'],
-                          'isNewOrder': false,
-                        },
-                      );
-                    },
-                  );
-                },
+              Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.4,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    return ListTile(
+                      title: Text(order['id'] as String),
+                      subtitle: Text(order['status'] as String),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(
+                          context,
+                          '/order',
+                          arguments: {
+                            'orderId': order['id'],
+                            'isNewOrder': false,
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -1017,7 +1261,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                                child: const Icon(Icons.shopping_cart, color: AppTheme.primaryColor),
+                                backgroundImage: item.imageUrl != null 
+                                    ? NetworkImage(item.imageUrl!) 
+                                    : null,
+                                child: item.imageUrl == null 
+                                    ? const Icon(Icons.shopping_cart, color: AppTheme.primaryColor)
+                                    : null,
                               ),
                               title: Text(item.name),
                               subtitle: Text('\$${item.price.toStringAsFixed(2)} each'),
@@ -1085,7 +1334,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                         _proceedToOrderDetails();
                       },
                       style: AppTheme.primaryButtonStyle,
-                      child: const Text('Proceed to Checkout'),
+                      child: Text(widget.isNewOrder ? 'Proceed to Checkout' : 'Save Changes'),
                     ),
                   ),
                 ),
@@ -1105,10 +1354,41 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 
   // Navigate back to the main screen keeping current ticket intact if possible
   void _goBackToMain() {
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/main',
-      (route) => false,
-    );
+    if (!widget.isNewOrder && _cartItems.isNotEmpty) {
+      // Show confirmation dialog when editing
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Unsaved Changes'),
+          content: const Text('Do you want to save your changes before leaving?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/main',
+                  (route) => false,
+                );
+              },
+              child: const Text('Discard'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                _saveOrderChanges();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/main',
+        (route) => false,
+      );
+    }
   }
 }

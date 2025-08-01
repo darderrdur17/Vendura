@@ -13,7 +13,7 @@ final ongoingOrdersProvider = Provider<List<Map<String, dynamic>>>(
     final orders = ref.watch(ordersProvider);
     return orders.where((order) {
       final status = (order['status'] as String).toLowerCase();
-      return status == 'pending' || status == 'in progress';
+      return status == 'pending' || status == 'inprogress' || status == 'in progress';
     }).toList();
   },
 );
@@ -35,7 +35,81 @@ class OrdersNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   }
 
   void _loadOrders() {
-    state = MockService.getOrders();
+    // Always ensure sample orders exist for testing
+    final now = DateTime.now();
+    final sampleOrders = [
+      {
+        'id': 'SAMPLE-DINE-IN',
+        'items': [
+          {
+            'id': 'item1',
+            'name': 'Cappuccino',
+            'price': 5.99,
+            'quantity': 2,
+            'comment': 'Extra hot',
+            'imageUrl': 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200',
+          },
+          {
+            'id': 'item2',
+            'name': 'Croissant',
+            'price': 3.99,
+            'quantity': 1,
+            'comment': 'Warmed up',
+            'imageUrl': 'https://images.unsplash.com/photo-1609501676725-7186f8b4beb8?w=200',
+          },
+        ],
+        'totalAmount': 15.97,
+        'status': 'inProgress',
+        'createdAt': now.subtract(const Duration(minutes: 15)).toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+        'orderType': 'Dine-in',
+        'tableNumber': '12',
+      },
+      {
+        'id': 'SAMPLE-TAKEAWAY',
+        'items': [
+          {
+            'id': 'item3',
+            'name': 'Latte',
+            'price': 4.99,
+            'quantity': 1,
+            'comment': 'Oat milk',
+            'imageUrl': 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200',
+          },
+          {
+            'id': 'item4',
+            'name': 'Chocolate Muffin',
+            'price': 3.49,
+            'quantity': 2,
+            'imageUrl': 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=200',
+          },
+        ],
+        'totalAmount': 11.97,
+        'status': 'pending',
+        'createdAt': now.subtract(const Duration(minutes: 5)).toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+        'orderType': 'Takeaway',
+        'customerName': 'Alex',
+      },
+    ];
+
+    // Load existing orders but ensure samples are always present
+    final existingOrders = MockService.getOrders();
+    final nonSampleOrders = existingOrders.where(
+      (order) => !order['id'].toString().startsWith('SAMPLE-')
+    ).toList();
+
+    state = [...sampleOrders, ...nonSampleOrders];
+  }
+
+  // Prevent deletion of sample orders
+  Future<void> deleteOrder(String orderId) async {
+    if (orderId.startsWith('SAMPLE-')) {
+      // Don't allow deletion of sample orders
+      return;
+    }
+    await MockService.deleteOrder(orderId);
+    refreshOrders();
   }
 
   // Refresh orders from service
@@ -56,11 +130,6 @@ class OrdersNotifier extends StateNotifier<List<Map<String, dynamic>>> {
     refreshOrders();
   }
 
-  // Delete order
-  Future<void> deleteOrder(String orderId) async {
-    await MockService.deleteOrder(orderId);
-    refreshOrders();
-  }
 
   // Mark order as completed after successful payment
   Future<void> completeOrder(String orderId) async {
@@ -113,7 +182,7 @@ class OrdersNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   int get ongoingOrdersCount {
     return state.where((order) {
       final status = (order['status'] as String).toLowerCase();
-      return status == 'pending' || status == 'in progress';
+      return status == 'pending' || status == 'inprogress' || status == 'in progress';
     }).length;
   }
 } 
